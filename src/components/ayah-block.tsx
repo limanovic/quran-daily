@@ -95,7 +95,7 @@ function makeStyles(theme: Theme) {
       fontFamily: 'Amiri',
       fontSize: 30,
       lineHeight: 52,
-      color: theme.accent,
+      color: theme.gold,
     },
     surahName: { fontSize: 15, fontWeight: '600', color: theme.text, marginTop: 2 },
     surahMeta: { fontSize: 13, color: theme.textMuted, marginTop: 3 },
@@ -116,7 +116,7 @@ function makeStyles(theme: Theme) {
     refChipText: { color: theme.accent, fontSize: 13, fontWeight: '600' },
     refChipTextBookmarked: { color: theme.onAccent },
     bookmarkText: { color: theme.textMuted, fontSize: 13, fontWeight: '500' },
-    bookmarkTextActive: { color: theme.accent },
+    bookmarkTextActive: { color: theme.gold },
     arabic: {
       fontFamily: 'Amiri',
       fontSize: 28,

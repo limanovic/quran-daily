@@ -77,6 +77,8 @@ function makeStyles(theme: Theme) {
     names: { flex: 1 },
     nameEn: { fontSize: 16, fontWeight: '600', color: theme.text },
     meta: { fontSize: 12.5, color: theme.textMuted, marginTop: 2 },
-    nameAr: { fontFamily: 'Amiri', fontSize: 20, color: theme.accent, marginLeft: 12 },
+    // Manuscript gold, matching the surah heading in the reader — the Arabic
+    // name is the same thing in both places. Indigo stays for interaction.
+    nameAr: { fontFamily: 'UthmanicHafs', fontSize: 20, color: theme.gold, marginLeft: 12 },
   });
 }

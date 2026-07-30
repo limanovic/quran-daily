@@ -73,6 +73,14 @@ export function makeListStyles(theme: Theme) {
       marginBottom: 10,
     },
     hint: { fontSize: 13, lineHeight: 18, color: theme.textMuted, paddingBottom: 12 },
+    sample: { paddingTop: 14, paddingBottom: 6 },
+    sampleArabic: {
+      fontFamily: 'UthmanicHafs',
+      color: theme.text,
+      textAlign: 'right',
+      writingDirection: 'rtl',
+    },
+    sampleText: { color: theme.text, marginTop: 8 },
     chevron: { fontSize: 22, color: theme.textMuted, lineHeight: 24 },
     stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     // 44pt: the minimum comfortable touch target on both platforms.

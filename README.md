@@ -3,7 +3,7 @@
 A small, fully offline personal app: at your chosen times each day, a local
 notification delivers a random consecutive passage of the Qur’an (ayahs or
 mushaf pages), with Arabic, English (Sahih International) and/or Bosnian
-(Besim Korkut) text. Tapping the notification opens a Reader showing exactly
+(Muhamed Mehanović) text. Tapping the notification opens a Reader showing exactly
 that passage. No accounts, no server, no analytics — everything runs
 on-device from a bundled SQLite database.
 
@@ -22,7 +22,7 @@ simulator — permissions are requested from the Settings screen banner.
 
 ```
 assets/quran.db          bundled Qur'an database (6,236 ayahs, 604 pages, 114 surahs)
-assets/fonts/            Amiri (Arabic naskh) font
+assets/fonts/            KFGQPC Uthmanic Hafs (Madani mushaf) font
 src/lib/db.ts            first-launch DB copy + typed query helpers
 src/lib/passage.ts       buildPassage / resolvePassage / formatReference
 src/lib/notifications.ts scheduling window, top-up, ledger

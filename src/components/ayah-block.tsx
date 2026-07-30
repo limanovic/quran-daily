@@ -29,7 +29,10 @@ function AyahBlockInner({
 }: Props) {
   const theme = useTheme();
   const t = useT();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const styles = useMemo(
+    () => makeStyles(theme, settings.textScale),
+    [theme, settings.textScale],
+  );
 
   return (
     <View>
@@ -60,7 +63,11 @@ function AyahBlockInner({
             </Pressable>
           )}
         </View>
-        {settings.showArabic && <Text style={styles.arabic}>{row.arabic}</Text>}
+        {settings.showArabic && (
+          <Text style={styles.arabic}>
+            {row.arabic} {ayahMark(row.ayah)}
+          </Text>
+        )}
         {settings.translations.map((code) => {
           const text = translations[code]?.[row.id];
           if (!text) return null;
@@ -81,7 +88,28 @@ function AyahBlockInner({
 
 export const AyahBlock = memo(AyahBlockInner);
 
-function makeStyles(theme: Theme) {
+const ARABIC_INDIC = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+/**
+ * End-of-ayah marker as the mushaf prints it. The number is just Arabic-Indic
+ * digits: Uthmanic Hafs composes them into the roundel itself, so prefixing
+ * U+06DD (END OF AYAH) draws a second, empty one beside it.
+ *
+ * Only rendered alongside the Arabic — it belongs to that line.
+ */
+function ayahMark(ayah: number): string {
+  return String(ayah)
+    .split('')
+    .map((d) => ARABIC_INDIC[Number(d)])
+    .join('');
+}
+
+/**
+ * Only the scripture itself scales — chips, labels and the surah header stay
+ * put so the layout doesn't drift with the setting.
+ */
+function makeStyles(theme: Theme, scale: number) {
+  const size = (n: number) => Math.round(n * scale);
   return StyleSheet.create({
     surahHeader: {
       alignItems: 'center',
@@ -92,7 +120,7 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.border,
     },
     surahArabic: {
-      fontFamily: 'Amiri',
+      fontFamily: 'UthmanicHafs',
       fontSize: 30,
       lineHeight: 52,
       color: theme.gold,
@@ -118,9 +146,9 @@ function makeStyles(theme: Theme) {
     bookmarkText: { color: theme.textMuted, fontSize: 13, fontWeight: '500' },
     bookmarkTextActive: { color: theme.gold },
     arabic: {
-      fontFamily: 'Amiri',
-      fontSize: 28,
-      lineHeight: 56,
+      fontFamily: 'UthmanicHafs',
+      fontSize: size(28),
+      lineHeight: size(56),
       color: theme.text,
       textAlign: 'right',
       writingDirection: 'rtl',
@@ -134,7 +162,7 @@ function makeStyles(theme: Theme) {
       color: theme.textMuted,
       marginBottom: 4,
     },
-    translationText: { fontSize: 16, lineHeight: 25, color: theme.text },
+    translationText: { fontSize: size(16), lineHeight: size(25), color: theme.text },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });
 }

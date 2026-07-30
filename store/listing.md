@@ -20,9 +20,9 @@ Pick one or more daily times. At each one, Daily Qur’an delivers a random cons
 
 • Daily passages by local notification, at your chosen times
 • Random consecutive passages: ayahs or mushaf pages
-• Arabic text in beautiful Amiri naskh script
+• Uthmani Arabic text in the script of the Madani mushaf
 • English translation (Sahih International)
-• Bosnian translation (Besim Korkut)
+• Bosnian translation (Muhamed Mehanović)
 • Full Qur’an browser: all 114 surahs, 604 pages
 • Bookmarks
 • Light and dark theme

@@ -5,6 +5,7 @@ import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { LanguageRow, getLanguages } from '@/lib/db';
 import { applyUiLanguage, useT } from '@/lib/i18n';
 import { rebuildSchedule } from '@/lib/notifications';
+import { TextSizeControl } from '@/components/text-size-control';
 import { Settings, loadSettings, saveSettings } from '@/lib/settings';
 import { setThemePreference, useTheme } from '@/lib/theme';
 import { makeListStyles } from '@/lib/ui-styles';
@@ -32,6 +33,16 @@ export default function SettingsScreen() {
       const normalized = await saveSettings(next);
       await rebuildSchedule(normalized);
     })().catch(() => {});
+  }, []);
+
+  /**
+   * Persist without touching the notification schedule — for settings the
+   * scheduled passages don't bake in. The slider would otherwise cancel and
+   * rebuild every pending notification on each step of a drag.
+   */
+  const persist = useCallback((next: Settings) => {
+    setSettings(next);
+    saveSettings(next).catch(() => {});
   }, []);
 
   if (!settings) return <View style={styles.screen} />;
@@ -102,6 +113,14 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionTitle}>{t('textTitle')}</Text>
       <View style={styles.card}>
+        {/* Dragging is meaningless without seeing the result, so the sample
+            renders at the live scale in whatever the reader will show. */}
+        <TextSizeControl
+          scale={settings.textScale}
+          showArabic={settings.showArabic}
+          showTranslation={settings.translations.length > 0}
+          onCommit={(textScale) => persist({ ...settings, textScale })}
+        />
         <View style={styles.row}>
           <Text style={styles.rowLabel}>{t('arabic')}</Text>
           <Switch

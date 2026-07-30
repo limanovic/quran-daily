@@ -107,7 +107,7 @@ function makeStyles(theme: Theme) {
     rowMain: { flex: 1, marginRight: 12 },
     reference: { fontSize: 16, fontWeight: '600', color: theme.text },
     snippet: {
-      fontFamily: 'Amiri',
+      fontFamily: 'UthmanicHafs',
       fontSize: 16,
       color: theme.textMuted,
       marginTop: 2,

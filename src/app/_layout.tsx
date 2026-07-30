@@ -25,7 +25,10 @@ export default function RootLayout() {
   const t = useT();
   const [prefsReady, setPrefsReady] = useState(false);
   const [fontsLoaded] = useFonts({
-    Amiri: require('../../assets/fonts/Amiri-Regular.ttf'),
+    // The Madani mushaf typeface, paired with the Uthmani text in the database:
+    // wasla, dagger alef and waqf marks are drawn as they are in print, and
+    // U+06DD renders as the ornate ayah roundel.
+    UthmanicHafs: require('../../assets/fonts/UthmanicHafs.otf'),
   });
   const ready = fontsLoaded && prefsReady;
 

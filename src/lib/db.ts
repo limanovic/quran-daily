@@ -41,8 +41,9 @@ export const TOTAL_PAGES = 604;
 // Bump the name whenever the bundled database changes shape — the copy runs
 // once per install, so existing installs only pick up a new file under a new
 // name. Older copies are deleted below.
-const DB_NAME = 'quran.v2.db';
-const OLD_DB_NAMES = ['quran.db'];
+// v3: Uthmani Arabic text, and Mehanović in place of Korkut for Bosnian.
+const DB_NAME = 'quran.v3.db';
+const OLD_DB_NAMES = ['quran.db', 'quran.v2.db'];
 
 /**
  * expo-sqlite cannot open a database straight from the asset bundle, so on

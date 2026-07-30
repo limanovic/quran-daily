@@ -15,6 +15,7 @@ export type Settings = {
   showArabic: boolean;
   translations: string[]; // language codes, in display order
   readingMode: ReadingMode; // continuous scroll vs mushaf-style page swipes
+  textScale: number; // multiplier on reader font sizes, within TEXT_SCALE
   theme: ThemePreference;
   uiLanguage: string; // 'auto' (follow first translation) or a TRANSLATION_CODES entry
 };
@@ -31,9 +32,20 @@ export const DEFAULT_SETTINGS: Settings = {
   showArabic: true,
   translations: ['en'],
   readingMode: 'scroll',
+  textScale: 1,
   theme: 'system',
   uiLanguage: 'auto',
 };
+
+/** Reader text size range, as a multiplier on the base font sizes. */
+export const TEXT_SCALE = { min: 0.8, max: 1.6, step: 0.05 } as const;
+
+/** Snap a scale to the nearest step and keep it inside the range. */
+export function clampTextScale(scale: number): number {
+  const { min, max, step } = TEXT_SCALE;
+  const snapped = Math.round(scale / step) * step;
+  return Number(Math.min(max, Math.max(min, snapped)).toFixed(2));
+}
 
 /** Sane per-unit bounds for `count` (tune later). */
 export const COUNT_BOUNDS: Record<Unit, { min: number; max: number }> = {
@@ -80,6 +92,12 @@ export function normalizeSettings(
   // Something must stay visible.
   if (!s.showArabic && s.translations.length === 0) s.translations = ['en'];
   if (s.readingMode !== 'scroll' && s.readingMode !== 'page') s.readingMode = 'scroll';
+  // Snap to the nearest step so a hand-edited or future-version value still
+  // lands on something the picker can show as selected.
+  s.textScale =
+    typeof s.textScale === 'number' && Number.isFinite(s.textScale)
+      ? clampTextScale(s.textScale)
+      : DEFAULT_SETTINGS.textScale;
   if (s.theme !== 'system' && s.theme !== 'light' && s.theme !== 'dark') s.theme = 'system';
   if (s.uiLanguage !== 'auto' && !known.has(s.uiLanguage)) s.uiLanguage = 'auto';
   return s;

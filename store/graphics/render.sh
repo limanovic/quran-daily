@@ -23,6 +23,7 @@ shot icon.html            512  512  play-icon-512.png
 shot icon.html           1024 1024  app-icon-1024.png
 shot icon-foreground.html 512  512  android-icon-foreground.png --default-background-color=00000000
 shot icon-monochrome.html 432  432  android-icon-monochrome.png --default-background-color=00000000
+shot splash.html          1024 1024 splash-icon.png             --default-background-color=00000000
 shot feature.html        1024  500  feature-graphic-1024x500.png
 
 # Play rejects alpha on the store icon and feature graphic; the full-bleed

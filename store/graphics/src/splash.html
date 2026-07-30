@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  svg { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<!--
+  Splash logo. Same motif as the icon, but with no adaptive-icon safe zone to
+  respect — nothing crops a splash image, so the artwork runs to the edges of
+  its canvas and `imageWidth` in app.json controls the on-screen size.
+  Rotated-square vertices sit at 110 * sqrt(2) = 156 from centre (180,180),
+  i.e. 24..336, leaving just the stroke's half-width as margin.
+-->
+<svg viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E4C87A"/>
+      <stop offset="48%" stop-color="#C8A64A"/>
+      <stop offset="100%" stop-color="#9C7C2C"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke="url(#gold)" stroke-width="13" stroke-linejoin="round">
+    <rect x="70" y="70" width="220" height="220" rx="8"/>
+    <rect x="70" y="70" width="220" height="220" rx="8" transform="rotate(45 180 180)"/>
+  </g>
+
+  <circle cx="180" cy="180" r="25" fill="none" stroke="url(#gold)" stroke-width="13"/>
+  <circle cx="180" cy="180" r="7" fill="url(#gold)"/>
+</svg>
+</body>
+</html>

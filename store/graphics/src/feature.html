@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Amiri";
+    src: url("file:///Users/adilimanovic/Projekti/quran-daily/assets/fonts/Amiri-Regular.ttf") format("truetype");
+  }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+  .canvas {
+    position: relative;
+    width: 1024px; height: 500px;
+    background: radial-gradient(120% 150% at 78% 30%, #2B4E8E 0%, #23417A 45%, #16294F 100%);
+    overflow: hidden;
+  }
+  /* Oversized motif bleeding off the right edge — decorative, never load-bearing. */
+  .motif { position: absolute; right: 34px; top: 50px; width: 400px; height: 400px; opacity: .72; }
+  .copy {
+    position: absolute; left: 76px; top: 0; height: 500px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  h1 {
+    font-family: "Amiri", Georgia, serif;
+    font-size: 82px; line-height: 1.05; margin: 0;
+    color: #F7F4EE; letter-spacing: .5px;
+  }
+  .rule { width: 96px; height: 3px; background: #C8A64A; margin: 26px 0 24px; border-radius: 2px; }
+  p {
+    font-family: "Amiri", Georgia, serif;
+    font-size: 31px; line-height: 1.4; margin: 0; max-width: 400px; color: #C7CEDF;
+  }
+  .tag { margin-top: 22px; font-size: 25px; color: #C8A64A; letter-spacing: 1.6px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <svg class="motif" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="#E4C87A" stroke-width="9" stroke-linejoin="round">
+      <rect x="106" y="106" width="300" height="300" rx="10"/>
+      <rect x="106" y="106" width="300" height="300" rx="10" transform="rotate(45 256 256)"/>
+    </g>
+    <circle cx="256" cy="256" r="34" fill="none" stroke="#E4C87A" stroke-width="9"/>
+    <circle cx="256" cy="256" r="9" fill="#C8A64A"/>
+  </svg>
+
+  <div class="copy">
+    <h1>Daily Qur’an</h1>
+    <div class="rule"></div>
+    <p>A passage every day, at the times you choose.</p>
+    <div class="tag">Offline · Private · Free</div>
+  </div>
+</div>
+</body>
+</html>

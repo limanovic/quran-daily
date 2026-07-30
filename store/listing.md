@@ -48,12 +48,22 @@ quran, koran, kuran, daily verse, ayah, islam, muslim, offline quran, bosnian qu
 
 adilimanovic@gmail.com
 
-## Graphics checklist (still needed)
+## Graphics checklist
 
-- [ ] App icon 512×512 PNG (32-bit, no transparency for Play)
-- [ ] Feature graphic 1024×500 PNG/JPG
-- [ ] Min 2 phone screenshots (16:9 or 9:16, min 320px side)
+Generated into `store/graphics/` — see the README there. Regenerate with
+`store/graphics/render.sh`.
+
+- [x] App icon 512×512 PNG, no alpha — `graphics/play-icon-512.png`
+- [x] Feature graphic 1024×500 — `graphics/feature-graphic-1024x500.png`
+- [ ] Phone screenshots, 1440×3120 — `graphics/screenshots/` holds a first pass
+      (home, reader, surahs, reader-dark), but it is **stale**: it predates
+      in-progress UI changes. Re-run `graphics/capture-screenshots.sh` before
+      uploading.
 - [ ] Optional: 7" and 10" tablet screenshots
+
+Open decision: the app still ships the stock Expo template icon. The Play icon
+above uses the new Rub el Hizb mark, so the two will not match until the icon
+swap in `graphics/README.md` is applied.
 
 ## Data safety form answers
 

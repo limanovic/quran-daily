@@ -1,0 +1,143 @@
+import { StyleSheet } from 'react-native';
+
+import { Theme } from '@/lib/theme';
+
+/**
+ * Card / row / segment styles shared by the home and settings screens — the
+ * two list-shaped screens that must look like one continuous surface.
+ */
+export function makeListStyles(theme: Theme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.background },
+    content: { padding: 20, paddingBottom: 48 },
+    banner: {
+      backgroundColor: theme.accentSoft,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 20,
+    },
+    bannerText: { color: theme.text, fontSize: 14, lineHeight: 20 },
+    bannerButton: {
+      alignSelf: 'flex-start',
+      backgroundColor: theme.accent,
+      borderRadius: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      marginTop: 12,
+    },
+    bannerButtonText: { color: theme.onAccent, fontWeight: '600', fontSize: 14 },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: theme.textMuted,
+      marginBottom: 8,
+      marginTop: 16,
+    },
+    card: {
+      backgroundColor: theme.surface,
+      borderRadius: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.border,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      marginBottom: 8,
+    },
+    segmented: {
+      flexDirection: 'row',
+      backgroundColor: theme.background,
+      borderRadius: 10,
+      padding: 3,
+      marginVertical: 10,
+    },
+    segment: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
+    segmentActive: { backgroundColor: theme.accent },
+    segmentText: { fontSize: 15, fontWeight: '500', color: theme.textMuted },
+    segmentTextActive: { color: theme.onAccent, fontWeight: '600' },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+    },
+    rowLabel: { fontSize: 16, color: theme.text },
+    rowSub: { fontSize: 12, color: theme.textMuted, marginTop: 2 },
+    rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    chevron: { fontSize: 22, color: theme.textMuted, lineHeight: 24 },
+    deliveryDivider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+      marginTop: 4,
+      paddingTop: 4,
+    },
+    deliveryControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      paddingBottom: 12,
+    },
+    unitToggle: {
+      flex: 1,
+      flexDirection: 'row',
+      backgroundColor: theme.background,
+      borderRadius: 10,
+      padding: 3,
+    },
+    stepper: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    stepButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: theme.accentSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepButtonDisabled: { opacity: 0.35 },
+    stepButtonText: { fontSize: 20, color: theme.accent, fontWeight: '600', lineHeight: 24 },
+    stepValue: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: theme.text,
+      minWidth: 24,
+      textAlign: 'center',
+    },
+    timeText: { fontSize: 18, fontWeight: '600', color: theme.text, fontVariant: ['tabular-nums'] },
+    removeText: { color: theme.danger, fontSize: 14, fontWeight: '500' },
+    addRow: { paddingVertical: 12 },
+    addText: { color: theme.accent, fontSize: 16, fontWeight: '600' },
+    headerButton: { paddingHorizontal: 4, paddingVertical: 4 },
+    headerButtonText: { fontSize: 20, color: theme.text },
+    previewButton: {
+      backgroundColor: theme.accent,
+      borderRadius: 12,
+      alignItems: 'center',
+      paddingVertical: 15,
+      marginTop: 28,
+    },
+    previewButtonText: { color: theme.onAccent, fontSize: 16, fontWeight: '600' },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    },
+    modalSheet: {
+      backgroundColor: theme.surface,
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      paddingTop: 18,
+      paddingHorizontal: 20,
+      paddingBottom: 32,
+      maxHeight: '70%',
+    },
+    modalTitle: { fontSize: 17, fontWeight: '700', color: theme.text, marginBottom: 6 },
+    modalList: { flexGrow: 0 },
+    modalRow: {
+      paddingVertical: 13,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    modalRowLabel: { fontSize: 16, fontWeight: '600', color: theme.text },
+    modalRowSub: { fontSize: 13, color: theme.textMuted, marginTop: 2 },
+  });
+}

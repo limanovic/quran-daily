@@ -87,6 +87,7 @@ export default function RootLayout() {
       <Stack.Screen name="quran" options={{ title: t('quran') }} />
       <Stack.Screen name="surahs" options={{ title: t('surahs') }} />
       <Stack.Screen name="bookmarks" options={{ title: t('bookmarks') }} />
+      <Stack.Screen name="settings" options={{ title: t('settings') }} />
     </Stack>
   );
 }

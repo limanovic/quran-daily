@@ -169,6 +169,14 @@ export function topUpSchedule(settings: Settings): Promise<LedgerEntry[]> {
 }
 
 async function topUpScheduleInner(settings: Settings): Promise<LedgerEntry[]> {
+  // No times set: the user has turned notifications off from inside the app.
+  // Clear anything still pending — and note the horizon maths below would
+  // divide by zero and loop forever on an empty list.
+  if (settings.deliveries.length === 0) {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await saveLedger([]);
+    return [];
+  }
   if (!(await getPermissionGranted())) return loadLedger();
   // Notification titles/bodies bake in text at scheduling time — make sure
   // they are built in the language these settings ask for.

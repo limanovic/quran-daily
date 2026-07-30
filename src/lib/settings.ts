@@ -11,7 +11,7 @@ export type Delivery = {
 };
 
 export type Settings = {
-  deliveries: Delivery[]; // at least one, unique times, sorted by time
+  deliveries: Delivery[]; // unique times, sorted by time; empty = no notifications
   showArabic: boolean;
   translations: string[]; // language codes, in display order
   readingMode: ReadingMode; // continuous scroll vs mushaf-style page swipes
@@ -69,7 +69,8 @@ export function normalizeSettings(
     .map(normalizeDelivery)
     .filter((d) => TIME_RE.test(d.time) && !seen.has(d.time) && (seen.add(d.time), true))
     .sort((a, b) => a.time.localeCompare(b.time));
-  if (s.deliveries.length === 0) s.deliveries = DEFAULT_SETTINGS.deliveries.map((d) => ({ ...d }));
+  // An empty list is a valid choice: it's how a user turns notifications off
+  // from inside the app. Fresh installs still start from DEFAULT_SETTINGS.
   // Migrate pre-list installs: rebuild the list from the old booleans.
   if (!Array.isArray(rest.translations) && (showEnglish !== undefined || showBosnian !== undefined)) {
     s.translations = [...(showEnglish ? ['en'] : []), ...(showBosnian ? ['bs'] : [])];

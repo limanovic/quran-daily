@@ -1,18 +1,92 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Stack, router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { loadBookmarks, loadLastPosition } from '@/lib/bookmarks';
 import { getAyahsByIds, getSurahs } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import { getPermissionGranted, rebuildSchedule, requestPermission } from '@/lib/notifications';
 import { buildPassage } from '@/lib/passage';
-import { COUNT_BOUNDS, Delivery, Settings, loadSettings, saveSettings } from '@/lib/settings';
+import {
+  COUNT_BOUNDS,
+  DEFAULT_SETTINGS,
+  Delivery,
+  Settings,
+  loadSettings,
+  saveSettings,
+} from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
 import { makeListStyles } from '@/lib/ui-styles';
 
 type LastPosition = { id: number; name: string | null; surah: number; ayah: number } | null;
+
+/** The delivery due next — the first one later today, else tomorrow's first. */
+function nextDelivery(deliveries: Delivery[]): Delivery | undefined {
+  const now = new Date();
+  const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return deliveries.find((d) => d.time > hhmm) ?? deliveries[0];
+}
+
+/**
+ * Stepper button that keeps firing while held — reaching 20 ayahs from 5 is
+ * otherwise fifteen separate taps.
+ */
+function StepButton({
+  label,
+  glyph,
+  disabled,
+  style,
+  textStyle,
+  onStep,
+}: {
+  label: string;
+  glyph: string;
+  disabled: boolean;
+  style: StyleProp<ViewStyle>;
+  textStyle: StyleProp<TextStyle>;
+  onStep: () => void;
+}) {
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // The interval must call the *current* onStep: the one captured when the
+  // hold began still sees the old count and would re-apply the same value.
+  const step = useRef(onStep);
+  step.current = onStep;
+  const stop = useCallback(() => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+  }, []);
+  useEffect(() => stop, [stop]);
+
+  return (
+    <Pressable
+      style={style}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      onPress={onStep}
+      onLongPress={() => {
+        stop();
+        timer.current = setInterval(() => step.current(), 120);
+      }}
+      onPressOut={stop}
+    >
+      <Text style={textStyle}>{glyph}</Text>
+    </Pressable>
+  );
+}
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -20,7 +94,10 @@ export default function HomeScreen() {
   const styles = useMemo(() => makeListStyles(theme), [theme]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [granted, setGranted] = useState<boolean | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  // Which time picker is open: adding a new delivery, or retiming the one
+  // currently open in the edit sheet.
+  const [picker, setPicker] = useState<'add' | 'edit' | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState<LastPosition>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
 
@@ -81,26 +158,45 @@ export default function HomeScreen() {
 
   const onPreview = useCallback(async () => {
     if (!settings) return;
-    const d = settings.deliveries[0];
+    // Preview what actually arrives next, not whichever wird happens to be
+    // first in the list.
+    const d = nextDelivery(settings.deliveries);
+    if (!d) return;
     const { passageKey } = await buildPassage(d.unit, d.count);
     router.push({ pathname: '/reader', params: { key: JSON.stringify(passageKey) } });
   }, [settings]);
 
   const onTimePicked = useCallback(
     (event: DateTimePickerEvent, date?: Date) => {
-      setShowTimePicker(false);
+      const mode = picker;
+      setPicker(null);
       if (event.type !== 'set' || !date || !settings) return;
       const hh = String(date.getHours()).padStart(2, '0');
       const mm = String(date.getMinutes()).padStart(2, '0');
       const time = `${hh}:${mm}`;
-      if (settings.deliveries.some((d) => d.time === time)) return;
-      // New deliveries inherit the last delivery's passage shape.
-      const last = settings.deliveries[settings.deliveries.length - 1];
-      const next = [...settings.deliveries, { time, unit: last.unit, count: last.count }];
-      next.sort((a, b) => a.time.localeCompare(b.time));
-      apply({ ...settings, deliveries: next });
+      // A time already on the list: just open it rather than duplicating it.
+      if (settings.deliveries.some((d) => d.time === time)) {
+        setEditing(time);
+        return;
+      }
+      const deliveries =
+        mode === 'add'
+          ? // New deliveries inherit the last one's shape; on an empty list
+            // there is nothing to inherit, so fall back to the default.
+            [
+              ...settings.deliveries,
+              {
+                ...(settings.deliveries[settings.deliveries.length - 1] ??
+                  DEFAULT_SETTINGS.deliveries[0]),
+                time,
+              },
+            ]
+          : settings.deliveries.map((d) => (d.time === editing ? { ...d, time } : d));
+      deliveries.sort((a, b) => a.time.localeCompare(b.time));
+      apply({ ...settings, deliveries });
+      setEditing(time);
     },
-    [settings, apply],
+    [picker, editing, settings, apply],
   );
 
   const header = (
@@ -138,10 +234,23 @@ export default function HomeScreen() {
     apply({ ...settings, deliveries });
   };
 
+  const amountLabel = (d: Delivery) =>
+    d.unit === 'ayah' ? t('ayahsCount', { n: d.count }) : t('pagesCount', { n: d.count });
+
+  /** Seed the time picker with an existing delivery's time, or 09:00. */
+  const pickerValue = (time: string | null) => {
+    const [hh, mm] = time ? time.split(':').map(Number) : [9, 0];
+    return new Date(2000, 0, 1, hh, mm);
+  };
+
+  const edited = settings.deliveries.find((d) => d.time === editing) ?? null;
+  const editedBounds = edited ? COUNT_BOUNDS[edited.unit] : null;
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {header}
-      {granted === false && (
+      {/* Only nag about OS permission when the user actually wants deliveries. */}
+      {granted === false && settings.deliveries.length > 0 && (
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{t('notifOff')}</Text>
           <Pressable style={styles.bannerButton} onPress={onEnableNotifications}>
@@ -150,85 +259,39 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>{t('deliveryTimes')}</Text>
+      <Text style={styles.sectionTitle}>{t('wird')}</Text>
+      {/* "Wird" is unfamiliar to many, and a list of times doesn't say a
+          notification is what arrives — one line covers both. */}
+      <Text style={styles.sectionHint}>{t('wirdHint')}</Text>
       <View style={styles.card}>
-        {settings.deliveries.map((delivery, index) => {
-          const bounds = COUNT_BOUNDS[delivery.unit];
-          return (
-            <View key={delivery.time} style={index > 0 && styles.deliveryDivider}>
-              <View style={styles.row}>
-                <Text style={styles.timeText}>{delivery.time}</Text>
-                {settings.deliveries.length > 1 && (
-                  <Pressable
-                    onPress={() =>
-                      apply({
-                        ...settings,
-                        deliveries: settings.deliveries.filter((d) => d.time !== delivery.time),
-                      })
-                    }
-                  >
-                    <Text style={styles.removeText}>{t('remove')}</Text>
-                  </Pressable>
-                )}
-              </View>
-              <View style={styles.deliveryControls}>
-                <View style={styles.unitToggle}>
-                  {(['ayah', 'page'] as const).map((unit) => (
-                    <Pressable
-                      key={unit}
-                      style={[styles.segment, delivery.unit === unit && styles.segmentActive]}
-                      onPress={() =>
-                        delivery.unit !== unit && updateDelivery(delivery.time, { unit })
-                      }
-                    >
-                      <Text
-                        style={[
-                          styles.segmentText,
-                          delivery.unit === unit && styles.segmentTextActive,
-                        ]}
-                      >
-                        {unit === 'ayah' ? t('ayahs') : t('pages')}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.stepper}>
-                  <Pressable
-                    style={[
-                      styles.stepButton,
-                      delivery.count <= bounds.min && styles.stepButtonDisabled,
-                    ]}
-                    onPress={() =>
-                      delivery.count > bounds.min &&
-                      updateDelivery(delivery.time, { count: delivery.count - 1 })
-                    }
-                  >
-                    <Text style={styles.stepButtonText}>−</Text>
-                  </Pressable>
-                  <Text style={styles.stepValue}>{delivery.count}</Text>
-                  <Pressable
-                    style={[
-                      styles.stepButton,
-                      delivery.count >= bounds.max && styles.stepButtonDisabled,
-                    ]}
-                    onPress={() =>
-                      delivery.count < bounds.max &&
-                      updateDelivery(delivery.time, { count: delivery.count + 1 })
-                    }
-                  >
-                    <Text style={styles.stepButtonText}>+</Text>
-                  </Pressable>
-                </View>
-              </View>
+        {settings.deliveries.length === 0 && (
+          <View style={styles.row}>
+            <Text style={styles.rowValue}>{t('noTimes')}</Text>
+          </View>
+        )}
+        {settings.deliveries.map((delivery) => (
+          <Pressable
+            key={delivery.time}
+            style={styles.row}
+            accessibilityRole="button"
+            accessibilityLabel={`${delivery.time}, ${amountLabel(delivery)}`}
+            onPress={() => setEditing(delivery.time)}
+          >
+            <Text style={styles.timeText}>{delivery.time}</Text>
+            <View style={styles.rowRight}>
+              <Text style={styles.rowValue}>{amountLabel(delivery)}</Text>
+              <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+                ›
+              </Text>
             </View>
-          );
-        })}
-        <Pressable style={styles.addRow} onPress={() => setShowTimePicker(true)}>
+          </Pressable>
+        ))}
+        <Pressable style={styles.addRow} accessibilityRole="button" onPress={() => setPicker('add')}>
           <Text style={styles.addText}>+ {t('addTime')}</Text>
         </Pressable>
-        {showTimePicker && (
+        {picker === 'add' && (
           <DateTimePicker
-            value={new Date(2000, 0, 1, 9, 0)}
+            value={pickerValue(null)}
             mode="time"
             is24Hour
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
@@ -237,45 +300,168 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {settings.deliveries.length > 0 && (
+        <Pressable style={styles.linkRow} accessibilityRole="button" onPress={onPreview}>
+          <Text style={styles.linkText}>{t('previewNext')}</Text>
+        </Pressable>
+      )}
+
       <Text style={styles.sectionTitle}>{t('reading')}</Text>
+      <Pressable
+        style={styles.continueCard}
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: '/quran',
+            params: { start: String(lastPosition?.id ?? 1) },
+          })
+        }
+      >
+        <View>
+          <Text style={styles.continueLabel}>{t('continueReading')}</Text>
+          <Text style={styles.continueSub}>
+            {lastPosition
+              ? lastPosition.name
+                ? `${lastPosition.name} ${lastPosition.surah}:${lastPosition.ayah}`
+                : t('ayahN', { n: lastPosition.id })
+              : t('startBeginning')}
+          </Text>
+        </View>
+        <Text style={[styles.chevron, styles.chevronOnAccent]} accessibilityElementsHidden importantForAccessibility="no">
+          ›
+        </Text>
+      </Pressable>
       <View style={styles.card}>
         <Pressable
           style={styles.row}
-          onPress={() =>
-            router.push({
-              pathname: '/quran',
-              params: { start: String(lastPosition?.id ?? 1) },
-            })
-          }
+          accessibilityRole="button"
+          onPress={() => router.push('/bookmarks')}
         >
-          <View>
-            <Text style={styles.rowLabel}>{t('continueReading')}</Text>
-            <Text style={styles.rowSub}>
-              {lastPosition
-                ? lastPosition.name
-                  ? `${lastPosition.name} ${lastPosition.surah}:${lastPosition.ayah}`
-                  : t('ayahN', { n: lastPosition.id })
-                : t('startBeginning')}
-            </Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </Pressable>
-        <Pressable style={styles.row} onPress={() => router.push('/bookmarks')}>
           <Text style={styles.rowLabel}>{t('bookmarks')}</Text>
           <View style={styles.rowRight}>
             {bookmarkCount > 0 && <Text style={styles.rowSub}>{bookmarkCount}</Text>}
-            <Text style={styles.chevron}>›</Text>
+            <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+              ›
+            </Text>
           </View>
         </Pressable>
-        <Pressable style={styles.row} onPress={() => router.push('/surahs')}>
+        <Pressable
+          style={styles.row}
+          accessibilityRole="button"
+          onPress={() => router.push('/surahs')}
+        >
           <Text style={styles.rowLabel}>{t('surahs')}</Text>
-          <Text style={styles.chevron}>›</Text>
+          <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+            ›
+          </Text>
         </Pressable>
       </View>
 
-      <Pressable style={styles.previewButton} onPress={onPreview}>
-        <Text style={styles.previewButtonText}>{t('preview')}</Text>
-      </Pressable>
+      <Modal
+        visible={edited !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditing(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditing(null)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            {edited && editedBounds && (
+              <>
+                <Text style={styles.modalTitle}>{t('passage')}</Text>
+                <Pressable
+                  style={styles.row}
+                  accessibilityRole="button"
+                  onPress={() => setPicker('edit')}
+                >
+                  <Text style={styles.rowLabel}>{t('time')}</Text>
+                  <View style={styles.rowRight}>
+                    <Text style={styles.timeText}>{edited.time}</Text>
+                    <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+                      ›
+                    </Text>
+                  </View>
+                </Pressable>
+                {picker === 'edit' && (
+                  <DateTimePicker
+                    value={pickerValue(edited.time)}
+                    mode="time"
+                    is24Hour
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onTimePicked}
+                  />
+                )}
+                <View style={styles.segmented}>
+                  {(['ayah', 'page'] as const).map((unit) => (
+                    <Pressable
+                      key={unit}
+                      style={[styles.segment, edited.unit === unit && styles.segmentActive]}
+                      onPress={() => edited.unit !== unit && updateDelivery(edited.time, { unit })}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          edited.unit === unit && styles.segmentTextActive,
+                        ]}
+                      >
+                        {unit === 'ayah' ? t('ayahs') : t('pages')}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('amount')}</Text>
+                  <View style={styles.stepper}>
+                    <StepButton
+                      label={t('decrease')}
+                      glyph="−"
+                      disabled={edited.count <= editedBounds.min}
+                      style={[
+                        styles.stepButton,
+                        edited.count <= editedBounds.min && styles.stepButtonDisabled,
+                      ]}
+                      textStyle={styles.stepButtonText}
+                      onStep={() =>
+                        edited.count > editedBounds.min &&
+                        updateDelivery(edited.time, { count: edited.count - 1 })
+                      }
+                    />
+                    <Text style={styles.stepValue}>{edited.count}</Text>
+                    <StepButton
+                      label={t('increase')}
+                      glyph="+"
+                      disabled={edited.count >= editedBounds.max}
+                      style={[
+                        styles.stepButton,
+                        edited.count >= editedBounds.max && styles.stepButtonDisabled,
+                      ]}
+                      textStyle={styles.stepButtonText}
+                      onStep={() =>
+                        edited.count < editedBounds.max &&
+                        updateDelivery(edited.time, { count: edited.count + 1 })
+                      }
+                    />
+                  </View>
+                </View>
+                {/* Removing the last one is allowed: an empty list is how
+                    notifications get turned off from inside the app. */}
+                <Pressable
+                  style={styles.row}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setEditing(null);
+                    apply({
+                      ...settings,
+                      deliveries: settings.deliveries.filter((d) => d.time !== edited.time),
+                    });
+                  }}
+                >
+                  <Text style={styles.removeText}>{t('remove')}</Text>
+                </Pressable>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }

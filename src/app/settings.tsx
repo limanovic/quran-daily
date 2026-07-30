@@ -72,7 +72,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>{t('display')}</Text>
+      <Text style={styles.sectionTitle}>{t('readingModeTitle')}</Text>
       <View style={styles.card}>
         <View style={styles.segmented}>
           {(['scroll', 'page'] as const).map((mode) => (
@@ -89,11 +89,19 @@ export default function SettingsScreen() {
                   settings.readingMode === mode && styles.segmentTextActive,
                 ]}
               >
-                {mode === 'scroll' ? t('scroll') : t('pages')}
+                {mode === 'scroll' ? t('continuous') : t('pageByPage')}
               </Text>
             </Pressable>
           ))}
         </View>
+        {/* The segment labels alone don't say what changes — spell it out. */}
+        <Text style={styles.hint}>
+          {settings.readingMode === 'scroll' ? t('scrollHint') : t('pageHint')}
+        </Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>{t('textTitle')}</Text>
+      <View style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>{t('arabic')}</Text>
           <Switch
@@ -136,7 +144,11 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionTitle}>{t('appLanguage')}</Text>
       <View style={styles.card}>
-        <Pressable style={styles.row} onPress={() => setShowUiLanguagePicker(true)}>
+        <Pressable
+          style={styles.row}
+          accessibilityRole="button"
+          onPress={() => setShowUiLanguagePicker(true)}
+        >
           <Text style={styles.rowLabel}>{t('appLanguage')}</Text>
           <View style={styles.rowRight}>
             <Text style={styles.rowSub}>
@@ -144,7 +156,9 @@ export default function SettingsScreen() {
                 ? t('automatic')
                 : languageByCode.get(settings.uiLanguage)?.native_name ?? settings.uiLanguage}
             </Text>
-            <Text style={styles.chevron}>›</Text>
+            <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+              ›
+            </Text>
           </View>
         </Pressable>
       </View>

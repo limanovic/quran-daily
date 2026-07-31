@@ -17,7 +17,16 @@ import {
 import { loadBookmarks, loadLastPosition } from '@/lib/bookmarks';
 import { getAyahsByIds, getSurahs } from '@/lib/db';
 import { useT } from '@/lib/i18n';
-import { getPermissionGranted, rebuildSchedule, requestPermission } from '@/lib/notifications';
+import {
+  canScheduleExactAlarms,
+  dismissExactAlarmPrompt,
+  getPermissionGranted,
+  isExactAlarmPromptDismissed,
+  openExactAlarmSettings,
+  rebuildSchedule,
+  requestPermission,
+} from '@/lib/notifications';
+import { addExactAlarmPermissionListener } from '../../modules/exact-alarms';
 import { buildPassage } from '@/lib/passage';
 import {
   COUNT_BOUNDS,
@@ -100,9 +109,26 @@ export default function HomeScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState<LastPosition>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  // Exact-alarm state: true everywhere except Android 12+ without the grant.
+  const [exactAlarms, setExactAlarms] = useState(true);
+  const [exactPromptDismissed, setExactPromptDismissed] = useState(true);
 
   useEffect(() => {
     getPermissionGranted().then(setGranted);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    setExactAlarms(canScheduleExactAlarms());
+    isExactAlarmPromptDismissed().then((d) => setExactPromptDismissed(d));
+    // The toggle lives in a system screen, so the grant arrives as a broadcast
+    // rather than a result. Pending one-shots were queued while the OS was only
+    // honouring them approximately — requeue them to claim the exact minute.
+    const sub = addExactAlarmPermissionListener((ok) => {
+      setExactAlarms(ok);
+      if (ok) loadSettings().then(rebuildSchedule).catch(() => {});
+    });
+    return () => sub?.remove();
   }, []);
 
   // Deliveries, reading progress and bookmarks all change while other screens
@@ -117,6 +143,8 @@ export default function HomeScreen() {
         ]);
         setSettings(loaded);
         setBookmarkCount(bookmarks.length);
+        // Covers coming back from the system toggle if the broadcast is missed.
+        if (Platform.OS === 'android') setExactAlarms(canScheduleExactAlarms());
         if (!lastId) {
           setLastPosition(null);
           return;
@@ -304,6 +332,26 @@ export default function HomeScreen() {
         <Pressable style={styles.linkRow} accessibilityRole="button" onPress={onPreview}>
           <Text style={styles.linkText}>{t('previewNext')}</Text>
         </Pressable>
+      )}
+
+      {/* Offered, not demanded: without the grant reminders still arrive, just
+          batched a few minutes off. Shown only where it can actually be acted
+          on — Android 12+ without the grant — and never again once dismissed. */}
+      {!exactAlarms && !exactPromptDismissed && settings.deliveries.length > 0 && (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>{t('exactAlarmsHint')}</Text>
+          <Pressable style={styles.bannerButton} onPress={openExactAlarmSettings}>
+            <Text style={styles.bannerButtonText}>{t('allowExactAlarms')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setExactPromptDismissed(true);
+              dismissExactAlarmPrompt().catch(() => {});
+            }}
+          >
+            <Text style={styles.linkText}>{t('dismiss')}</Text>
+          </Pressable>
+        </View>
       )}
 
       <Text style={styles.sectionTitle}>{t('reading')}</Text>

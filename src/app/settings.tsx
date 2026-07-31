@@ -1,10 +1,14 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 
 import { LanguageRow, getLanguages } from '@/lib/db';
 import { applyUiLanguage, useT } from '@/lib/i18n';
-import { rebuildSchedule } from '@/lib/notifications';
+import {
+  openBatteryOptimizationSettings,
+  openExactAlarmSettings,
+  rebuildSchedule,
+} from '@/lib/notifications';
 import { TextSizeControl } from '@/components/text-size-control';
 import { Settings, loadSettings, saveSettings } from '@/lib/settings';
 import { setThemePreference, useTheme } from '@/lib/theme';
@@ -160,6 +164,33 @@ export default function SettingsScreen() {
           </Pressable>
         )}
       </View>
+
+      {/* Permanent escape hatch. The home-screen offer can be dismissed, and
+          battery optimisation is invisible to the app entirely, so both system
+          screens stay reachable from here regardless of state. */}
+      {Platform.OS === 'android' && (
+        <>
+          <Text style={styles.sectionTitle}>{t('deliveryTroubles')}</Text>
+          <View style={styles.card}>
+            <Pressable style={styles.row} accessibilityRole="button" onPress={openExactAlarmSettings}>
+              <Text style={styles.rowLabel}>{t('allowExactAlarms')}</Text>
+              <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+                ›
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.row}
+              accessibilityRole="button"
+              onPress={openBatteryOptimizationSettings}
+            >
+              <Text style={styles.rowLabel}>{t('ignoreBatteryOpt')}</Text>
+              <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+                ›
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
 
       <Text style={styles.sectionTitle}>{t('appLanguage')}</Text>
       <View style={styles.card}>

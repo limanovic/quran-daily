@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { AyahRow, getTranslationsByIdRange } from './db';
 import { applyUiLanguage, t } from './i18n';
 import { PassageKey, buildPassage, formatReference } from './passage';
@@ -32,8 +33,14 @@ export type LedgerEntry = {
 };
 
 const LEDGER_KEY = 'ledger.v1';
+const EXACT_PROMPT_KEY = 'exactAlarmPrompt.dismissed.v1';
 const MAX_PENDING = 60;
-const ANDROID_CHANNEL_ID = 'daily-quran';
+// Android freezes a channel's importance at creation time — later
+// setNotificationChannelAsync calls with the same id can't raise it. The `-v2`
+// suffix exists because the original channel shipped at DEFAULT importance,
+// which puts the reminder silently in the shade instead of on screen.
+const ANDROID_CHANNEL_ID = 'daily-quran-v2';
+const LEGACY_ANDROID_CHANNEL_IDS = ['daily-quran'];
 
 export function configureNotificationHandling(): void {
   Notifications.setNotificationHandler({
@@ -49,10 +56,53 @@ export function configureNotificationHandling(): void {
 export async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    // HIGH so the reminder surfaces as a heads-up banner. At DEFAULT it lands
+    // in the shade only, which reads as "no notification arrived" to anyone
+    // who doesn't pull the shade down at that moment.
     name: t('channelName'),
-    importance: Notifications.AndroidImportance.DEFAULT,
+    importance: Notifications.AndroidImportance.HIGH,
     sound: undefined,
   });
+  await Promise.all(
+    LEGACY_ANDROID_CHANNEL_IDS.map((id) =>
+      Notifications.deleteNotificationChannelAsync(id).catch(() => {}),
+    ),
+  );
+}
+
+/**
+ * Android 12+ gates exact alarms behind SCHEDULE_EXACT_ALARM, and Android 14+
+ * denies it by default. Without it a scheduled passage still arrives — the OS
+ * batches it, landing a few minutes off the requested time.
+ */
+export { canScheduleExactAlarms, openExactAlarmSettings } from '../../modules/exact-alarms';
+
+/**
+ * The exact-alarm offer is a nicety, not a gate — reminders still arrive
+ * without it. Once dismissed it stays dismissed; Settings keeps the row.
+ */
+export async function isExactAlarmPromptDismissed(): Promise<boolean> {
+  return (await AsyncStorage.getItem(EXACT_PROMPT_KEY)) === '1';
+}
+
+export async function dismissExactAlarmPrompt(): Promise<void> {
+  await AsyncStorage.setItem(EXACT_PROMPT_KEY, '1');
+}
+
+/**
+ * Battery optimisation (and OEM "put app to sleep" features built on top of
+ * it) suspends the alarm entirely while the phone is idle — the overnight
+ * case where a morning reminder never fires at all.
+ */
+export async function openBatteryOptimizationSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await IntentLauncher.startActivityAsync(
+      'android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS',
+    );
+  } catch {
+    await Linking.openSettings().catch(() => {});
+  }
 }
 
 export async function getPermissionGranted(): Promise<boolean> {

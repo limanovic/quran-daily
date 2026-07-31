@@ -68,6 +68,11 @@ const en = {
   bookmark: 'Bookmark',
   bookmarked: 'Bookmarked',
   channelName: 'Daily passages',
+  deliveryTroubles: 'Reminders not arriving?',
+  allowExactAlarms: 'Allow exact alarms',
+  ignoreBatteryOpt: 'Ignore battery optimisation',
+  exactAlarmsHint: 'Reminders may arrive a few minutes late. Allow exact alarms to fix that.',
+  dismiss: 'Dismiss',
 };
 
 export type UiStringKey = keyof typeof en;
@@ -133,6 +138,11 @@ const bs: Strings = {
   bookmark: 'Zabilježi',
   bookmarked: 'Zabilježeno',
   channelName: 'Dnevni odlomci',
+  deliveryTroubles: 'Podsjetnici ne stižu?',
+  allowExactAlarms: 'Dozvoli tačne alarme',
+  ignoreBatteryOpt: 'Isključi optimizaciju baterije',
+  exactAlarmsHint: 'Podsjetnici mogu stići nekoliko minuta kasnije. Dozvoli tačne alarme da to riješiš.',
+  dismiss: 'Odbaci',
 };
 
 const sq: Strings = {
@@ -195,6 +205,11 @@ const sq: Strings = {
   bookmark: 'Ruaj',
   bookmarked: 'U ruajt',
   channelName: 'Pjesët ditore',
+  deliveryTroubles: 'Kujtesat nuk po vijnë?',
+  allowExactAlarms: 'Lejo alarmet e sakta',
+  ignoreBatteryOpt: 'Çaktivizo optimizimin e baterisë',
+  exactAlarmsHint: 'Kujtesat mund të vijnë disa minuta me vonesë. Lejo alarmet e sakta për ta rregulluar.',
+  dismiss: 'Hiqe',
 };
 
 const de: Strings = {
@@ -257,6 +272,11 @@ const de: Strings = {
   bookmark: 'Lesezeichen',
   bookmarked: 'Gespeichert',
   channelName: 'Tägliche Abschnitte',
+  deliveryTroubles: 'Erinnerungen kommen nicht an?',
+  allowExactAlarms: 'Exakte Wecker erlauben',
+  ignoreBatteryOpt: 'Akkuoptimierung deaktivieren',
+  exactAlarmsHint: 'Erinnerungen können einige Minuten zu spät kommen. Exakte Wecker erlauben, um das zu beheben.',
+  dismiss: 'Ausblenden',
 };
 
 const tr: Strings = {
@@ -319,6 +339,11 @@ const tr: Strings = {
   bookmark: 'Yer imi',
   bookmarked: 'Kaydedildi',
   channelName: 'Günlük bölümler',
+  deliveryTroubles: 'Hatırlatmalar gelmiyor mu?',
+  allowExactAlarms: 'Tam zamanlı alarmlara izin ver',
+  ignoreBatteryOpt: 'Pil optimizasyonunu kapat',
+  exactAlarmsHint: 'Hatırlatmalar birkaç dakika geç gelebilir. Düzeltmek için tam zamanlı alarmlara izin ver.',
+  dismiss: 'Kapat',
 };
 
 const fr: Strings = {
@@ -381,6 +406,11 @@ const fr: Strings = {
   bookmark: 'Signet',
   bookmarked: 'Enregistré',
   channelName: 'Passages quotidiens',
+  deliveryTroubles: 'Les rappels n’arrivent pas ?',
+  allowExactAlarms: 'Autoriser les alarmes exactes',
+  ignoreBatteryOpt: 'Désactiver l’optimisation de la batterie',
+  exactAlarmsHint: 'Les rappels peuvent arriver avec quelques minutes de retard. Autorisez les alarmes exactes pour corriger cela.',
+  dismiss: 'Ignorer',
 };
 
 const es: Strings = {
@@ -443,6 +473,11 @@ const es: Strings = {
   bookmark: 'Marcador',
   bookmarked: 'Guardado',
   channelName: 'Pasajes diarios',
+  deliveryTroubles: '¿No llegan los recordatorios?',
+  allowExactAlarms: 'Permitir alarmas exactas',
+  ignoreBatteryOpt: 'Desactivar la optimización de batería',
+  exactAlarmsHint: 'Los recordatorios pueden llegar unos minutos tarde. Permite alarmas exactas para solucionarlo.',
+  dismiss: 'Descartar',
 };
 
 const it: Strings = {
@@ -505,6 +540,11 @@ const it: Strings = {
   bookmark: 'Segnalibro',
   bookmarked: 'Salvato',
   channelName: 'Brani quotidiani',
+  deliveryTroubles: 'I promemoria non arrivano?',
+  allowExactAlarms: 'Consenti sveglie esatte',
+  ignoreBatteryOpt: 'Disattiva l’ottimizzazione della batteria',
+  exactAlarmsHint: 'I promemoria possono arrivare con qualche minuto di ritardo. Consenti le sveglie esatte per risolvere.',
+  dismiss: 'Ignora',
 };
 
 const nl: Strings = {
@@ -567,6 +607,11 @@ const nl: Strings = {
   bookmark: 'Bladwijzer',
   bookmarked: 'Opgeslagen',
   channelName: 'Dagelijkse passages',
+  deliveryTroubles: 'Komen de herinneringen niet aan?',
+  allowExactAlarms: 'Exacte alarmen toestaan',
+  ignoreBatteryOpt: 'Batterijoptimalisatie uitschakelen',
+  exactAlarmsHint: 'Herinneringen kunnen enkele minuten te laat aankomen. Sta exacte alarmen toe om dit op te lossen.',
+  dismiss: 'Sluiten',
 };
 
 const ru: Strings = {
@@ -629,6 +674,11 @@ const ru: Strings = {
   bookmark: 'Закладка',
   bookmarked: 'Сохранено',
   channelName: 'Ежедневные отрывки',
+  deliveryTroubles: 'Напоминания не приходят?',
+  allowExactAlarms: 'Разрешить точные будильники',
+  ignoreBatteryOpt: 'Отключить оптимизацию батареи',
+  exactAlarmsHint: 'Напоминания могут приходить на несколько минут позже. Разрешите точные будильники, чтобы это исправить.',
+  dismiss: 'Скрыть',
 };
 
 const id: Strings = {
@@ -691,6 +741,11 @@ const id: Strings = {
   bookmark: 'Tandai',
   bookmarked: 'Ditandai',
   channelName: 'Bacaan harian',
+  deliveryTroubles: 'Pengingat tidak muncul?',
+  allowExactAlarms: 'Izinkan alarm presisi',
+  ignoreBatteryOpt: 'Nonaktifkan optimasi baterai',
+  exactAlarmsHint: 'Pengingat bisa datang terlambat beberapa menit. Izinkan alarm presisi untuk memperbaikinya.',
+  dismiss: 'Tutup',
 };
 
 const ur: Strings = {
@@ -753,6 +808,11 @@ const ur: Strings = {
   bookmark: 'نشانی',
   bookmarked: 'محفوظ',
   channelName: 'روزانہ اقتباسات',
+  deliveryTroubles: 'یاد دہانیاں نہیں آ رہیں؟',
+  allowExactAlarms: 'عین وقت پر الارم کی اجازت دیں',
+  ignoreBatteryOpt: 'بیٹری آپٹیمائزیشن بند کریں',
+  exactAlarmsHint: 'یاد دہانیاں چند منٹ تاخیر سے آ سکتی ہیں۔ درست کرنے کے لیے عین وقت پر الارم کی اجازت دیں۔',
+  dismiss: 'برخاست کریں',
 };
 
 const STRINGS: Record<string, Strings> = { en, bs, sq, de, tr, fr, es, it, nl, ru, id, ur };

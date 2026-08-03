@@ -45,3 +45,7 @@ example
 # native module build output
 modules/*/android/build/
 modules/*/ios/build/
+
+# upload keystore + its passwords — back these up outside the repo, losing
+# them means the Play upload key has to be reset before you can ship again
+/credentials/

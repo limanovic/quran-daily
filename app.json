@@ -18,6 +18,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.limanovic.dailyquran",
+      "versionCode": 1,
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM"
       ],
@@ -47,7 +48,8 @@
       "expo-sqlite",
       "expo-asset",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/with-release-signing"
     ],
     "experiments": {
       "typedRoutes": true,

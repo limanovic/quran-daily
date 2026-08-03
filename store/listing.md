@@ -6,7 +6,7 @@ Daily Qur’an
 
 ## Short description (80 chars max)
 
-Daily Qur’an passages by notification. Arabic, English, Bosnian. 100% offline.
+Daily Qur’an passages by notification — in order or at random. 100% offline.
 
 ## Full description (4000 chars max)
 
@@ -14,17 +14,28 @@ Receive a passage of the Qur’an every day, at the times you choose — as a si
 
 **How it works**
 
-Pick one or more daily times. At each one, Daily Qur’an delivers a random consecutive passage — a few ayahs or full mushaf pages, your choice. The app remembers what you have already received, so passages don’t repeat until you have seen them all.
+Pick one or more daily times. Each one is its own wird: choose whether it arrives as a few ayahs or as full mushaf pages, and how many.
+
+Each wird can be set to either:
+
+• **In order** — it works through the mushaf from Al-Fatiha onward, carrying on from wherever it last left off. Finish An-Nas and it begins again at the start.
+• **Random** — a different passage every time, chosen at random.
+
+Set several times if you like, each with its own reading and its own place in the mushaf: an ordered wird in the morning, a random ayah in the evening.
 
 **Features**
 
 • Daily passages by local notification, at your chosen times
-• Random consecutive passages: ayahs or mushaf pages
+• Sequential or random, set per delivery time
+• Ayahs or mushaf pages, in the amount you choose
 • Uthmani Arabic text in the script of the Madani mushaf
-• English translation (Sahih International)
-• Bosnian translation (Muhamed Mehanović)
+• 12 translations: English (Sahih International), Bosnian (Muhamed Mehanović), Albanian (Hasan Efendi Nahi), German (Bubenheim & Elyas), Turkish (Diyanet İşleri), French (Muhammad Hamidullah), Spanish (Julio Cortés), Italian (Hamza Roberto Piccardo), Dutch (Fred Leemhuis), Russian (Эльмир Кулиев), Indonesian (Kementerian Agama RI), Urdu (Fateh Muhammad Jalandhry)
+• Show several translations side by side with the Arabic, or on their own
+• App interface available in all 12 languages
+• Read as continuous scroll or one mushaf page at a time
+• Adjustable text size
 • Full Qur’an browser: all 114 surahs, 604 pages
-• Bookmarks
+• Bookmarks, and one tap back to where you stopped reading
 • Light and dark theme
 
 **Completely private**
@@ -34,7 +45,7 @@ Pick one or more daily times. At each one, Daily Qur’an delivers a random cons
 • No ads, no analytics, no tracking
 • Free
 
-The full Qur’an — 6,236 ayahs — is bundled with the app in a local database. Nothing is downloaded, nothing is sent anywhere. Your settings, bookmarks and reading history stay on your device.
+The full Qur’an — 6,236 ayahs — is bundled with the app in a local database. Nothing is downloaded, nothing is sent anywhere. Your settings, bookmarks and reading progress stay on your device.
 
 ## Category
 
@@ -42,7 +53,7 @@ Books & Reference (alternative: Lifestyle)
 
 ## Tags / keywords (for ASO, not a console field)
 
-quran, koran, kuran, daily verse, ayah, islam, muslim, offline quran, bosnian quran
+quran, koran, kuran, daily verse, ayah, islam, muslim, offline quran, wird, bosnian quran
 
 ## Contact email
 
@@ -55,15 +66,25 @@ Generated into `store/graphics/` — see the README there. Regenerate with
 
 - [x] App icon 512×512 PNG, no alpha — `graphics/play-icon-512.png`
 - [x] Feature graphic 1024×500 — `graphics/feature-graphic-1024x500.png`
-- [ ] Phone screenshots, 1440×3120 — `graphics/screenshots/` holds a first pass
-      (home, reader, surahs, reader-dark), but it is **stale**: it predates
-      in-progress UI changes. Re-run `graphics/capture-screenshots.sh` before
-      uploading.
+- [x] In-app icon matches the Play icon — the Rub el Hizb mark shipped in
+      `assets/images/` (commit "icons")
+- [x] Phone screenshots, 1440×2970 — five in `graphics/screenshots/`: home, the
+      wird editor showing the sequential option, the reader, the surah list, and
+      the reader in dark. Captured on a Pixel 7 Pro API 34 emulator, status bar
+      cropped off the top.
 - [ ] Optional: 7" and 10" tablet screenshots
 
-Open decision: the app still ships the stock Expo template icon. The Play icon
-above uses the new Rub el Hizb mark, so the two will not match until the icon
-swap in `graphics/README.md` is applied.
+Note: `capture-screenshots.sh` is stale — its taps are hard-coded coordinates
+and it still reaches for Appearance on the home screen, which moved to Settings.
+The current shots were driven by looking up each control's bounds with
+`uiautomator dump`. Rewrite the script that way before relying on it again, and
+mind that the reported bounds sit ~73px above where the app actually paints.
+
+## Permissions to explain, if asked
+
+`SCHEDULE_EXACT_ALARM` — used only to make a reminder arrive at the minute the
+user set. Not the policy-restricted `USE_EXACT_ALARM`; the app works without the
+grant, the reminder simply arrives batched a few minutes late.
 
 ## Data safety form answers
 

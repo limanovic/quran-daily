@@ -24,7 +24,13 @@ const en = {
   ayahs: 'Ayahs',
   pages: 'Pages',
   wird: 'Wird',
-  wirdHint: 'Add a time — a notification brings that passage.',
+  wirdHint: 'A passage arrives at each time you set.',
+  random: 'Random',
+  sequential: 'In order',
+  randomHint: 'A different passage each time, chosen at random.',
+  sequentialHint: 'Carries on from where this wird left off, and starts again at Al-Fatiha after An-Nas.',
+  nextUp: 'Next up',
+  startOver: 'Start over from the beginning',
   time: 'Time',
   amount: 'Amount',
   pagesCount: '{n} pages',
@@ -73,6 +79,8 @@ const en = {
   ignoreBatteryOpt: 'Ignore battery optimisation',
   exactAlarmsHint: 'Reminders may arrive a few minutes late. Allow exact alarms to fix that.',
   dismiss: 'Dismiss',
+  autostartHint: 'Your phone stops reminders from arriving in the background. Allow autostart so they reach you on time.',
+  allowAutostart: 'Allow autostart',
 };
 
 export type UiStringKey = keyof typeof en;
@@ -93,7 +101,13 @@ const bs: Strings = {
   ayahs: 'Ajeti',
   pages: 'Stranice',
   wird: 'Vird',
-  wirdHint: 'Dodajte vrijeme — obavještenje donosi taj odlomak.',
+  wirdHint: 'Odlomak stiže u svako vrijeme koje postaviš.',
+  random: 'Nasumično',
+  sequential: 'Redom',
+  randomHint: 'Svaki put drugi odlomak, izabran nasumično.',
+  sequentialHint: 'Nastavlja tamo gdje je ovaj vird stao, a poslije En-Nasa kreće ponovo od El-Fatihe.',
+  nextUp: 'Sljedeće',
+  startOver: 'Počni ponovo od početka',
   time: 'Vrijeme',
   amount: 'Količina',
   pagesCount: '{n} stranica',
@@ -143,6 +157,8 @@ const bs: Strings = {
   ignoreBatteryOpt: 'Isključi optimizaciju baterije',
   exactAlarmsHint: 'Podsjetnici mogu stići nekoliko minuta kasnije. Dozvoli tačne alarme da to riješiš.',
   dismiss: 'Odbaci',
+  autostartHint: 'Tvoj telefon zaustavlja podsjetnike u pozadini. Dozvoli automatsko pokretanje da stignu na vrijeme.',
+  allowAutostart: 'Dozvoli automatsko pokretanje',
 };
 
 const sq: Strings = {
@@ -160,7 +176,13 @@ const sq: Strings = {
   ayahs: 'Ajete',
   pages: 'Faqe',
   wird: 'Vird',
-  wirdHint: 'Shtoni një orar — njoftimi sjell atë pjesë.',
+  wirdHint: 'Një pjesë vjen në çdo orë që caktoni.',
+  random: 'Rastësisht',
+  sequential: 'Me radhë',
+  randomHint: 'Një pjesë tjetër çdo herë, e zgjedhur rastësisht.',
+  sequentialHint: 'Vazhdon aty ku ka mbetur ky vird dhe pas En-Nasit nis sërish nga El-Fatiha.',
+  nextUp: 'Në vijim',
+  startOver: 'Fillo nga e para',
   time: 'Ora',
   amount: 'Sasia',
   pagesCount: '{n} faqe',
@@ -210,6 +232,8 @@ const sq: Strings = {
   ignoreBatteryOpt: 'Çaktivizo optimizimin e baterisë',
   exactAlarmsHint: 'Kujtesat mund të vijnë disa minuta me vonesë. Lejo alarmet e sakta për ta rregulluar.',
   dismiss: 'Hiqe',
+  autostartHint: 'Telefoni yt i ndalon kujtesat në sfond. Lejo nisjen automatike që të vijnë në kohë.',
+  allowAutostart: 'Lejo nisjen automatike',
 };
 
 const de: Strings = {
@@ -227,7 +251,13 @@ const de: Strings = {
   ayahs: 'Verse',
   pages: 'Seiten',
   wird: 'Tägliche Abschnitte',
-  wirdHint: 'Zeit hinzufügen — eine Benachrichtigung bringt den Abschnitt.',
+  wirdHint: 'Zu jeder eingestellten Zeit kommt ein Abschnitt.',
+  random: 'Zufällig',
+  sequential: 'Der Reihe nach',
+  randomHint: 'Jedes Mal ein anderer, zufällig gewählter Abschnitt.',
+  sequentialHint: 'Setzt dort fort, wo dieser Abschnitt zuletzt endete, und beginnt nach An-Nas wieder bei Al-Fatiha.',
+  nextUp: 'Als Nächstes',
+  startOver: 'Wieder von vorn beginnen',
   time: 'Uhrzeit',
   amount: 'Menge',
   pagesCount: '{n} Seiten',
@@ -277,6 +307,8 @@ const de: Strings = {
   ignoreBatteryOpt: 'Akkuoptimierung deaktivieren',
   exactAlarmsHint: 'Erinnerungen können einige Minuten zu spät kommen. Exakte Wecker erlauben, um das zu beheben.',
   dismiss: 'Ausblenden',
+  autostartHint: 'Dein Telefon blockiert Erinnerungen im Hintergrund. Erlaube den Autostart, damit sie pünktlich ankommen.',
+  allowAutostart: 'Autostart erlauben',
 };
 
 const tr: Strings = {
@@ -294,7 +326,13 @@ const tr: Strings = {
   ayahs: 'Ayetler',
   pages: 'Sayfalar',
   wird: 'Vird',
-  wirdHint: 'Bir saat ekleyin — bildirim o bölümü getirir.',
+  wirdHint: 'Belirlediğin her saatte bir bölüm gelir.',
+  random: 'Rastgele',
+  sequential: 'Sırayla',
+  randomHint: 'Her seferinde rastgele seçilen farklı bir bölüm.',
+  sequentialHint: 'Bu virdin kaldığı yerden devam eder; Nâs’tan sonra yeniden Fâtiha’dan başlar.',
+  nextUp: 'Sırada',
+  startOver: 'Baştan başla',
   time: 'Saat',
   amount: 'Miktar',
   pagesCount: '{n} sayfa',
@@ -344,6 +382,8 @@ const tr: Strings = {
   ignoreBatteryOpt: 'Pil optimizasyonunu kapat',
   exactAlarmsHint: 'Hatırlatmalar birkaç dakika geç gelebilir. Düzeltmek için tam zamanlı alarmlara izin ver.',
   dismiss: 'Kapat',
+  autostartHint: 'Telefonun arka planda hatırlatmaları engelliyor. Zamanında gelmeleri için otomatik başlatmaya izin ver.',
+  allowAutostart: 'Otomatik başlatmaya izin ver',
 };
 
 const fr: Strings = {
@@ -361,7 +401,13 @@ const fr: Strings = {
   ayahs: 'Versets',
   pages: 'Pages',
   wird: 'Wird',
-  wirdHint: 'Ajoutez une heure — une notification apporte ce passage.',
+  wirdHint: 'Un passage arrive à chaque heure que vous définissez.',
+  random: 'Aléatoire',
+  sequential: 'Dans l’ordre',
+  randomHint: 'Un passage différent à chaque fois, choisi au hasard.',
+  sequentialHint: 'Reprend là où ce wird s’est arrêté, et recommence à Al-Fatiha après An-Nas.',
+  nextUp: 'À suivre',
+  startOver: 'Recommencer depuis le début',
   time: 'Heure',
   amount: 'Quantité',
   pagesCount: '{n} pages',
@@ -411,6 +457,8 @@ const fr: Strings = {
   ignoreBatteryOpt: 'Désactiver l’optimisation de la batterie',
   exactAlarmsHint: 'Les rappels peuvent arriver avec quelques minutes de retard. Autorisez les alarmes exactes pour corriger cela.',
   dismiss: 'Ignorer',
+  autostartHint: 'Votre téléphone bloque les rappels en arrière-plan. Autorisez le démarrage automatique pour les recevoir à l’heure.',
+  allowAutostart: 'Autoriser le démarrage automatique',
 };
 
 const es: Strings = {
@@ -428,7 +476,13 @@ const es: Strings = {
   ayahs: 'Aleyas',
   pages: 'Páginas',
   wird: 'Wird',
-  wirdHint: 'Añade una hora — una notificación trae ese pasaje.',
+  wirdHint: 'Un pasaje llega a cada hora que establezcas.',
+  random: 'Aleatorio',
+  sequential: 'En orden',
+  randomHint: 'Un pasaje distinto cada vez, elegido al azar.',
+  sequentialHint: 'Continúa donde lo dejó este wird y vuelve a empezar en Al-Fatiha después de An-Nas.',
+  nextUp: 'A continuación',
+  startOver: 'Empezar de nuevo desde el principio',
   time: 'Hora',
   amount: 'Cantidad',
   pagesCount: '{n} páginas',
@@ -478,6 +532,8 @@ const es: Strings = {
   ignoreBatteryOpt: 'Desactivar la optimización de batería',
   exactAlarmsHint: 'Los recordatorios pueden llegar unos minutos tarde. Permite alarmas exactas para solucionarlo.',
   dismiss: 'Descartar',
+  autostartHint: 'Tu teléfono bloquea los recordatorios en segundo plano. Permite el inicio automático para recibirlos a tiempo.',
+  allowAutostart: 'Permitir inicio automático',
 };
 
 const it: Strings = {
@@ -495,7 +551,13 @@ const it: Strings = {
   ayahs: 'Versetti',
   pages: 'Pagine',
   wird: 'Wird',
-  wirdHint: 'Aggiungi un orario — una notifica porta quel brano.',
+  wirdHint: 'Un brano arriva a ogni orario che imposti.',
+  random: 'Casuale',
+  sequential: 'In ordine',
+  randomHint: 'Un brano diverso ogni volta, scelto a caso.',
+  sequentialHint: 'Riprende da dove questo wird si è fermato e ricomincia da Al-Fatiha dopo An-Nas.',
+  nextUp: 'Prossimo',
+  startOver: 'Ricomincia dall’inizio',
   time: 'Orario',
   amount: 'Quantità',
   pagesCount: '{n} pagine',
@@ -545,6 +607,8 @@ const it: Strings = {
   ignoreBatteryOpt: 'Disattiva l’ottimizzazione della batteria',
   exactAlarmsHint: 'I promemoria possono arrivare con qualche minuto di ritardo. Consenti le sveglie esatte per risolvere.',
   dismiss: 'Ignora',
+  autostartHint: 'Il tuo telefono blocca i promemoria in background. Consenti l’avvio automatico per riceverli in orario.',
+  allowAutostart: 'Consenti avvio automatico',
 };
 
 const nl: Strings = {
@@ -562,7 +626,13 @@ const nl: Strings = {
   ayahs: 'Verzen',
   pages: 'Pagina’s',
   wird: 'Wird',
-  wirdHint: 'Voeg een tijd toe — een melding brengt die passage.',
+  wirdHint: 'Op elk ingesteld tijdstip komt een passage.',
+  random: 'Willekeurig',
+  sequential: 'Op volgorde',
+  randomHint: 'Elke keer een andere passage, willekeurig gekozen.',
+  sequentialHint: 'Gaat verder waar deze wird gebleven was en begint na An-Nas opnieuw bij Al-Fatiha.',
+  nextUp: 'Hierna',
+  startOver: 'Opnieuw vanaf het begin',
   time: 'Tijd',
   amount: 'Hoeveelheid',
   pagesCount: '{n} pagina’s',
@@ -612,6 +682,8 @@ const nl: Strings = {
   ignoreBatteryOpt: 'Batterijoptimalisatie uitschakelen',
   exactAlarmsHint: 'Herinneringen kunnen enkele minuten te laat aankomen. Sta exacte alarmen toe om dit op te lossen.',
   dismiss: 'Sluiten',
+  autostartHint: 'Je telefoon blokkeert herinneringen op de achtergrond. Sta automatisch starten toe zodat ze op tijd aankomen.',
+  allowAutostart: 'Automatisch starten toestaan',
 };
 
 const ru: Strings = {
@@ -629,7 +701,13 @@ const ru: Strings = {
   ayahs: 'Аяты',
   pages: 'Страницы',
   wird: 'Вирд',
-  wirdHint: 'Добавьте время — уведомление принесёт этот отрывок.',
+  wirdHint: 'В каждое заданное время приходит отрывок.',
+  random: 'Случайно',
+  sequential: 'По порядку',
+  randomHint: 'Каждый раз другой отрывок, выбранный случайно.',
+  sequentialHint: 'Продолжает с того места, где остановился этот вирд, и после ан-Нас снова начинает с аль-Фатихи.',
+  nextUp: 'Далее',
+  startOver: 'Начать сначала',
   time: 'Время',
   amount: 'Количество',
   pagesCount: '{n} страниц',
@@ -679,6 +757,8 @@ const ru: Strings = {
   ignoreBatteryOpt: 'Отключить оптимизацию батареи',
   exactAlarmsHint: 'Напоминания могут приходить на несколько минут позже. Разрешите точные будильники, чтобы это исправить.',
   dismiss: 'Скрыть',
+  autostartHint: 'Ваш телефон блокирует напоминания в фоновом режиме. Разрешите автозапуск, чтобы они приходили вовремя.',
+  allowAutostart: 'Разрешить автозапуск',
 };
 
 const id: Strings = {
@@ -696,7 +776,13 @@ const id: Strings = {
   ayahs: 'Ayat',
   pages: 'Halaman',
   wird: 'Wirid',
-  wirdHint: 'Tambahkan waktu — notifikasi membawa bacaan itu.',
+  wirdHint: 'Sebuah bagian tiba pada setiap waktu yang Anda atur.',
+  random: 'Acak',
+  sequential: 'Berurutan',
+  randomHint: 'Bagian yang berbeda setiap kali, dipilih secara acak.',
+  sequentialHint: 'Melanjutkan dari tempat wirid ini berhenti, dan mulai lagi dari Al-Fatihah setelah An-Nas.',
+  nextUp: 'Berikutnya',
+  startOver: 'Mulai lagi dari awal',
   time: 'Waktu',
   amount: 'Jumlah',
   pagesCount: '{n} halaman',
@@ -746,6 +832,8 @@ const id: Strings = {
   ignoreBatteryOpt: 'Nonaktifkan optimasi baterai',
   exactAlarmsHint: 'Pengingat bisa datang terlambat beberapa menit. Izinkan alarm presisi untuk memperbaikinya.',
   dismiss: 'Tutup',
+  autostartHint: 'Ponsel Anda memblokir pengingat di latar belakang. Izinkan mulai otomatis agar tiba tepat waktu.',
+  allowAutostart: 'Izinkan mulai otomatis',
 };
 
 const ur: Strings = {
@@ -763,7 +851,13 @@ const ur: Strings = {
   ayahs: 'آیات',
   pages: 'صفحات',
   wird: 'ورد',
-  wirdHint: 'وقت شامل کریں — اطلاع وہ اقتباس لے کر آئے گی۔',
+  wirdHint: 'آپ کے مقرر کردہ ہر وقت پر ایک اقتباس آتا ہے۔',
+  random: 'بے ترتیب',
+  sequential: 'ترتیب سے',
+  randomHint: 'ہر بار ایک مختلف اقتباس، بے ترتیب طور پر منتخب۔',
+  sequentialHint: 'یہ ورد جہاں رُکا تھا وہیں سے جاری رہتا ہے، اور الناس کے بعد دوبارہ الفاتحہ سے شروع ہوتا ہے۔',
+  nextUp: 'اگلا',
+  startOver: 'شروع سے دوبارہ آغاز کریں',
   time: 'وقت',
   amount: 'مقدار',
   pagesCount: '{n} صفحات',
@@ -813,6 +907,8 @@ const ur: Strings = {
   ignoreBatteryOpt: 'بیٹری آپٹیمائزیشن بند کریں',
   exactAlarmsHint: 'یاد دہانیاں چند منٹ تاخیر سے آ سکتی ہیں۔ درست کرنے کے لیے عین وقت پر الارم کی اجازت دیں۔',
   dismiss: 'برخاست کریں',
+  autostartHint: 'آپ کا فون پس منظر میں یاد دہانیاں روکتا ہے۔ وقت پر موصول ہونے کے لیے خودکار آغاز کی اجازت دیں۔',
+  allowAutostart: 'خودکار آغاز کی اجازت دیں',
 };
 
 const STRINGS: Record<string, Strings> = { en, bs, sq, de, tr, fr, es, it, nl, ru, id, ur };

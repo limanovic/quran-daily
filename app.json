@@ -18,7 +18,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.limanovic.dailyquran",
-      "versionCode": 1,
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM"
       ],
@@ -53,6 +52,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6035653e-73fb-4589-82b5-6e40d92993a0"
+      }
+    },
+    "owner": "adilimanovic"
   }
 }

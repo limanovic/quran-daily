@@ -19,15 +19,20 @@ import { getAyahsByIds, getSurahs } from '@/lib/db';
 import { useT } from '@/lib/i18n';
 import {
   canScheduleExactAlarms,
+  dismissAutostartPrompt,
   dismissExactAlarmPrompt,
   getPermissionGranted,
+  isAutostartPromptDismissed,
   isExactAlarmPromptDismissed,
+  needsAutostartSetup,
+  onLedgerChange,
+  openAutostartSettings,
   openExactAlarmSettings,
   rebuildSchedule,
   requestPermission,
 } from '@/lib/notifications';
 import { addExactAlarmPermissionListener } from '../../modules/exact-alarms';
-import { buildPassage } from '@/lib/passage';
+import { buildPassage, buildPassageAt } from '@/lib/passage';
 import {
   COUNT_BOUNDS,
   DEFAULT_SETTINGS,
@@ -36,6 +41,13 @@ import {
   loadSettings,
   saveSettings,
 } from '@/lib/settings';
+import {
+  WirdCursors,
+  loadCursors,
+  positionOf,
+  renameCursor,
+  resetCursor,
+} from '@/lib/wird';
 import { useTheme } from '@/lib/theme';
 import { makeListStyles } from '@/lib/ui-styles';
 
@@ -109,9 +121,14 @@ export default function HomeScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState<LastPosition>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
+  // How far each sequential wird has reached, and the human reference for the
+  // one currently open in the edit sheet.
+  const [cursors, setCursors] = useState<WirdCursors>({});
+  const [nextUpLabel, setNextUpLabel] = useState<string | null>(null);
   // Exact-alarm state: true everywhere except Android 12+ without the grant.
   const [exactAlarms, setExactAlarms] = useState(true);
   const [exactPromptDismissed, setExactPromptDismissed] = useState(true);
+  const [autostartPromptDismissed, setAutostartPromptDismissed] = useState(true);
 
   useEffect(() => {
     getPermissionGranted().then(setGranted);
@@ -121,6 +138,7 @@ export default function HomeScreen() {
     if (Platform.OS !== 'android') return;
     setExactAlarms(canScheduleExactAlarms());
     isExactAlarmPromptDismissed().then((d) => setExactPromptDismissed(d));
+    if (needsAutostartSetup()) isAutostartPromptDismissed().then((d) => setAutostartPromptDismissed(d));
     // The toggle lives in a system screen, so the grant arrives as a broadcast
     // rather than a result. Pending one-shots were queued while the OS was only
     // honouring them approximately — requeue them to claim the exact minute.
@@ -136,13 +154,15 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const [loaded, lastId, bookmarks] = await Promise.all([
+        const [loaded, lastId, bookmarks, wird] = await Promise.all([
           loadSettings(),
           loadLastPosition(),
           loadBookmarks(),
+          loadCursors(),
         ]);
         setSettings(loaded);
         setBookmarkCount(bookmarks.length);
+        setCursors(wird);
         // Covers coming back from the system toggle if the broadcast is missed.
         if (Platform.OS === 'android') setExactAlarms(canScheduleExactAlarms());
         if (!lastId) {
@@ -164,6 +184,48 @@ export default function HomeScreen() {
       })().catch(() => {});
     }, []),
   );
+
+  // A cursor moves when a reminder fires, which the scheduler notices on its
+  // next run — not on any user action this screen can see.
+  useEffect(
+    () => onLedgerChange(() => { loadCursors().then(setCursors).catch(() => {}); }),
+    [],
+  );
+
+  const edited = settings?.deliveries.find((d) => d.time === editing) ?? null;
+  const editedTime = edited?.time;
+  const editedUnit = edited?.unit;
+  const editedMode = edited?.mode;
+
+  // Where the open wird resumes, spelled out as a reference rather than an
+  // ayah id — "Al-Baqara 2:255" means something, "ayah 262" doesn't.
+  useEffect(() => {
+    if (!editedTime || !editedUnit || editedMode !== 'sequential') {
+      setNextUpLabel(null);
+      return;
+    }
+    const position = positionOf(cursors, editedTime, editedUnit);
+    if (editedUnit === 'page') {
+      setNextUpLabel(t('pageN', { n: position }));
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const [rows, surahs] = await Promise.all([getAyahsByIds([position]), getSurahs()]);
+      if (cancelled) return;
+      const row = rows[0];
+      const name = row ? surahs.get(row.surah)?.name_en : null;
+      setNextUpLabel(
+        row && name
+          ? `${name} ${row.surah}:${row.ayah}`
+          : t('ayahN', { n: position }),
+      );
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedTime, editedUnit, editedMode, cursors]);
 
   /** Persist a settings change and rebuild the notification window with it. */
   const apply = useCallback((next: Settings) => {
@@ -190,12 +252,17 @@ export default function HomeScreen() {
     // first in the list.
     const d = nextDelivery(settings.deliveries);
     if (!d) return;
-    const { passageKey } = await buildPassage(d.unit, d.count);
+    // A sequential wird has one right answer for "next" — the cursor is the
+    // position its next reminder was already queued with.
+    const { passageKey } =
+      d.mode === 'sequential'
+        ? await buildPassageAt(d.unit, d.count, positionOf(await loadCursors(), d.time, d.unit))
+        : await buildPassage(d.unit, d.count);
     router.push({ pathname: '/reader', params: { key: JSON.stringify(passageKey) } });
   }, [settings]);
 
   const onTimePicked = useCallback(
-    (event: DateTimePickerEvent, date?: Date) => {
+    async (event: DateTimePickerEvent, date?: Date) => {
       const mode = picker;
       setPicker(null);
       if (event.type !== 'set' || !date || !settings) return;
@@ -221,6 +288,13 @@ export default function HomeScreen() {
             ]
           : settings.deliveries.map((d) => (d.time === editing ? { ...d, time } : d));
       deliveries.sort((a, b) => a.time.localeCompare(b.time));
+      // Progress is keyed by time, so a retimed wird has to carry its cursor
+      // across before the rebuild reads it — moving 09:00 to 10:00 must not
+      // restart the khatma.
+      if (mode === 'edit' && editing) {
+        await renameCursor(editing, time).catch(() => {});
+        setCursors(await loadCursors());
+      }
       apply({ ...settings, deliveries });
       setEditing(time);
     },
@@ -262,8 +336,10 @@ export default function HomeScreen() {
     apply({ ...settings, deliveries });
   };
 
-  const amountLabel = (d: Delivery) =>
-    d.unit === 'ayah' ? t('ayahsCount', { n: d.count }) : t('pagesCount', { n: d.count });
+  const amountLabel = (d: Delivery) => {
+    const amount = d.unit === 'ayah' ? t('ayahsCount', { n: d.count }) : t('pagesCount', { n: d.count });
+    return `${amount} · ${d.mode === 'sequential' ? t('sequential') : t('random')}`;
+  };
 
   /** Seed the time picker with an existing delivery's time, or 09:00. */
   const pickerValue = (time: string | null) => {
@@ -271,8 +347,16 @@ export default function HomeScreen() {
     return new Date(2000, 0, 1, hh, mm);
   };
 
-  const edited = settings.deliveries.find((d) => d.time === editing) ?? null;
   const editedBounds = edited ? COUNT_BOUNDS[edited.unit] : null;
+
+  /** Begin this wird's khatma again; pending reminders hold stale positions. */
+  const startOver = (time: string) => {
+    (async () => {
+      await resetCursor(time);
+      setCursors(await loadCursors());
+      await rebuildSchedule(await loadSettings());
+    })().catch(() => {});
+  };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -332,6 +416,39 @@ export default function HomeScreen() {
         <Pressable style={styles.linkRow} accessibilityRole="button" onPress={onPreview}>
           <Text style={styles.linkText}>{t('previewNext')}</Text>
         </Pressable>
+      )}
+
+      {/* The autostart grant can never be read back, so a banner about it could
+          only ever nag. A quiet standing link costs nothing and points at the
+          Settings section that collects every OS-level switch instead. */}
+      {Platform.OS === 'android' && settings.deliveries.length > 0 && (
+        <Pressable
+          style={styles.linkRow}
+          accessibilityRole="button"
+          onPress={() => router.push('/settings')}
+        >
+          <Text style={styles.linkText}>{t('deliveryTroubles')}</Text>
+        </Pressable>
+      )}
+
+      {/* Ranked above the exact-alarm offer: on these ROMs a reminder does not
+          arrive late, it does not arrive at all until the app is next opened.
+          The grant can't be read back, so dismissal is the user's "done". */}
+      {granted === true && !autostartPromptDismissed && settings.deliveries.length > 0 && (
+        <View style={styles.banner}>
+          <Text style={styles.bannerText}>{t('autostartHint')}</Text>
+          <Pressable style={styles.bannerButton} onPress={openAutostartSettings}>
+            <Text style={styles.bannerButtonText}>{t('allowAutostart')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              setAutostartPromptDismissed(true);
+              dismissAutostartPrompt().catch(() => {});
+            }}
+          >
+            <Text style={styles.linkText}>{t('dismiss')}</Text>
+          </Pressable>
+        </View>
       )}
 
       {/* Offered, not demanded: without the grant reminders still arrive, just
@@ -490,6 +607,45 @@ export default function HomeScreen() {
                     />
                   </View>
                 </View>
+                {/* Random or in order. Each time keeps its own place in the
+                    mus'haf, so one wird can walk through it while another
+                    stays a surprise. */}
+                <View style={styles.segmented}>
+                  {(['random', 'sequential'] as const).map((mode) => (
+                    <Pressable
+                      key={mode}
+                      style={[styles.segment, edited.mode === mode && styles.segmentActive]}
+                      onPress={() => edited.mode !== mode && updateDelivery(edited.time, { mode })}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          edited.mode === mode && styles.segmentTextActive,
+                        ]}
+                      >
+                        {mode === 'random' ? t('random') : t('sequential')}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.hint}>
+                  {edited.mode === 'sequential' ? t('sequentialHint') : t('randomHint')}
+                </Text>
+                {edited.mode === 'sequential' && (
+                  <>
+                    <View style={styles.row}>
+                      <Text style={styles.rowLabel}>{t('nextUp')}</Text>
+                      <Text style={styles.rowValue}>{nextUpLabel ?? '…'}</Text>
+                    </View>
+                    <Pressable
+                      style={styles.row}
+                      accessibilityRole="button"
+                      onPress={() => startOver(edited.time)}
+                    >
+                      <Text style={styles.linkText}>{t('startOver')}</Text>
+                    </Pressable>
+                  </>
+                )}
                 {/* Removing the last one is allowed: an empty list is how
                     notifications get turned off from inside the app. */}
                 <Pressable

@@ -4,10 +4,18 @@ import { ThemePreference } from './theme';
 
 export type ReadingMode = 'scroll' | 'page';
 
+/**
+ * How a delivery picks its passage. 'sequential' walks the mus'haf in order
+ * from wherever this delivery last reached (see lib/wird), wrapping back to
+ * Al-Fatiha after An-Nas; 'random' picks a fresh start point every time.
+ */
+export type WirdMode = 'random' | 'sequential';
+
 export type Delivery = {
   time: string; // 'HH:mm' 24h wall-clock
   unit: Unit;
   count: number; // units for this delivery
+  mode: WirdMode;
 };
 
 export type Settings = {
@@ -28,7 +36,7 @@ export const TRANSLATION_CODES = [
 const SETTINGS_KEY = 'settings.v1';
 
 export const DEFAULT_SETTINGS: Settings = {
-  deliveries: [{ time: '09:00', unit: 'ayah', count: 1 }],
+  deliveries: [{ time: '09:00', unit: 'ayah', count: 1, mode: 'random' }],
   showArabic: true,
   translations: ['en'],
   readingMode: 'scroll',
@@ -63,7 +71,9 @@ function normalizeDelivery(d: Partial<Delivery>): Delivery {
   const unit: Unit = d.unit === 'page' ? 'page' : 'ayah';
   const { min, max } = COUNT_BOUNDS[unit];
   const count = Math.min(max, Math.max(min, Math.round(d.count ?? min) || min));
-  return { time: d.time ?? '', unit, count };
+  // Installs from before sequential wird existed had one behaviour — keep it.
+  const mode: WirdMode = d.mode === 'sequential' ? 'sequential' : 'random';
+  return { time: d.time ?? '', unit, count, mode };
 }
 
 /** Clamp/repair a settings object so the rest of the app can trust it. */
@@ -74,7 +84,12 @@ export function normalizeSettings(
   const s: Settings = { ...DEFAULT_SETTINGS, ...rest };
   // Migrate pre-per-delivery installs: one global unit/count applied to each time.
   if (!Array.isArray(rest.deliveries) && Array.isArray(times)) {
-    s.deliveries = times.map((time) => ({ time, unit: unit ?? 'ayah', count: count ?? 1 }));
+    s.deliveries = times.map((time) => ({
+      time,
+      unit: unit ?? 'ayah',
+      count: count ?? 1,
+      mode: 'random' as const,
+    }));
   }
   const seen = new Set<string>();
   s.deliveries = s.deliveries

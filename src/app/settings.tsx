@@ -5,6 +5,8 @@ import { Modal, Platform, Pressable, ScrollView, Switch, Text, View } from 'reac
 import { LanguageRow, getLanguages } from '@/lib/db';
 import { applyUiLanguage, useT } from '@/lib/i18n';
 import {
+  needsAutostartSetup,
+  openAutostartSettings,
   openBatteryOptimizationSettings,
   openExactAlarmSettings,
   rebuildSchedule,
@@ -43,9 +45,16 @@ export default function SettingsScreen() {
    * Persist without touching the notification schedule — for settings the
    * scheduled passages don't bake in. The slider would otherwise cancel and
    * rebuild every pending notification on each step of a drag.
+   *
+   * Theme, reading mode and showArabic belong here too: none of them reach
+   * `buildBody`, which reads only `translations[0]`. Rebuilding for them threw
+   * away a full window of pending notifications to reschedule it identically.
    */
   const persist = useCallback((next: Settings) => {
     setSettings(next);
+    // The theme store is what components actually render from; AsyncStorage
+    // alone only takes effect on the next launch.
+    setThemePreference(next.theme);
     saveSettings(next).catch(() => {});
   }, []);
 
@@ -75,7 +84,7 @@ export default function SettingsScreen() {
             <Pressable
               key={pref}
               style={[styles.segment, settings.theme === pref && styles.segmentActive]}
-              onPress={() => settings.theme !== pref && apply({ ...settings, theme: pref })}
+              onPress={() => settings.theme !== pref && persist({ ...settings, theme: pref })}
             >
               <Text
                 style={[styles.segmentText, settings.theme === pref && styles.segmentTextActive]}
@@ -95,7 +104,7 @@ export default function SettingsScreen() {
               key={mode}
               style={[styles.segment, settings.readingMode === mode && styles.segmentActive]}
               onPress={() =>
-                settings.readingMode !== mode && apply({ ...settings, readingMode: mode })
+                settings.readingMode !== mode && persist({ ...settings, readingMode: mode })
               }
             >
               <Text
@@ -132,7 +141,7 @@ export default function SettingsScreen() {
             // Never allow removing the last displayed text.
             disabled={settings.showArabic && settings.translations.length === 0}
             trackColor={{ true: theme.accent }}
-            onValueChange={(value) => apply({ ...settings, showArabic: value })}
+            onValueChange={(value) => persist({ ...settings, showArabic: value })}
           />
         </View>
         {settings.translations.map((code) => {
@@ -172,6 +181,14 @@ export default function SettingsScreen() {
         <>
           <Text style={styles.sectionTitle}>{t('deliveryTroubles')}</Text>
           <View style={styles.card}>
+            {needsAutostartSetup() && (
+              <Pressable style={styles.row} accessibilityRole="button" onPress={openAutostartSettings}>
+                <Text style={styles.rowLabel}>{t('allowAutostart')}</Text>
+                <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">
+                  ›
+                </Text>
+              </Pressable>
+            )}
             <Pressable style={styles.row} accessibilityRole="button" onPress={openExactAlarmSettings}>
               <Text style={styles.rowLabel}>{t('allowExactAlarms')}</Text>
               <Text style={styles.chevron} accessibilityElementsHidden importantForAccessibility="no">

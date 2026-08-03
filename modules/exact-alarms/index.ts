@@ -41,3 +41,30 @@ export function addExactAlarmPermissionListener(
     native?.addListener('onExactAlarmPermissionChange', ({ granted }) => listener(granted)) ?? null
   );
 }
+
+declare class OemSettingsNativeModule extends NativeModule {
+  getManufacturer(): string;
+  needsAutostart(): boolean;
+  openAutostartSettings(): Promise<boolean>;
+}
+
+const oem = requireOptionalNativeModule<OemSettingsNativeModule>('OemSettings');
+
+/**
+ * Whether this ROM is one that blocks background process starts, which stops
+ * scheduled notifications from being posted until the app is next opened.
+ * There is no API to read the actual grant — this is a vendor guess, so the
+ * prompt built on it must always be dismissible.
+ */
+export function needsAutostartSetup(): boolean {
+  return oem?.needsAutostart() ?? false;
+}
+
+export function getManufacturer(): string {
+  return oem?.getManufacturer() ?? '';
+}
+
+/** Opens the vendor autostart screen. False if it fell back to app details. */
+export async function openAutostartSettings(): Promise<boolean> {
+  return (await oem?.openAutostartSettings()) ?? false;
+}

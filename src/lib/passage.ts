@@ -47,6 +47,25 @@ export async function buildPassage(unit: Unit, count: number): Promise<Passage> 
   return { rows, passageKey: { unit: 'page', startPage: start, count } };
 }
 
+/**
+ * Take `count` consecutive units starting at `start` — the sequential wird.
+ * A portion that would run past the end of the mus'haf is truncated instead
+ * of wrapped: a PassageKey describes one contiguous range, so a khatma ends
+ * on a short final portion and the cursor restarts at Al-Fatiha after it.
+ */
+export async function buildPassageAt(unit: Unit, count: number, start: number): Promise<Passage> {
+  const total = unit === 'ayah' ? TOTAL_AYAHS : TOTAL_PAGES;
+  if (count < 1 || count > total) throw new Error(`Invalid ${unit} count: ${count}`);
+  const from = Math.min(total, Math.max(1, Math.floor(start) || 1));
+  const take = Math.min(count, total - from + 1);
+  if (unit === 'ayah') {
+    const rows = await getAyahsByIdRange(from, from + take - 1);
+    return { rows, passageKey: { unit: 'ayah', startId: from, count: take } };
+  }
+  const rows = await getAyahsByPageRange(from, from + take - 1);
+  return { rows, passageKey: { unit: 'page', startPage: from, count: take } };
+}
+
 /** Re-query the exact passage a PassageKey refers to. Shared by Reader + scheduler. */
 export async function resolvePassage(key: PassageKey): Promise<AyahRow[]> {
   if (key.unit === 'ayah') {

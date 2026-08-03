@@ -4,6 +4,8 @@ import { useColorScheme } from "react-native";
 export type ThemePreference = "system" | "light" | "dark";
 
 export type Theme = {
+  /** Which of the two palettes this is — the status bar has to invert with it. */
+  dark: boolean;
   background: string;
   surface: string;
   border: string;
@@ -17,6 +19,7 @@ export type Theme = {
 };
 
 export const lightTheme: Theme = {
+  dark: false,
   background: "#F7F4EE", // warm sand
   surface: "#FDFBF6",
   border: "#E7E1D3",
@@ -30,6 +33,7 @@ export const lightTheme: Theme = {
 };
 
 export const darkTheme: Theme = {
+  dark: true,
   background: "#0E1220", // midnight
   surface: "#151A2B",
   border: "#262D42",

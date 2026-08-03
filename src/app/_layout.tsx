@@ -2,6 +2,7 @@ import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -76,21 +77,26 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.background },
-        headerTintColor: theme.text,
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: theme.background },
-        headerTitleStyle: { fontWeight: '600' },
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: t('appTitle') }} />
-      <Stack.Screen name="reader" options={{ title: '' }} />
-      <Stack.Screen name="quran" options={{ title: t('quran') }} />
-      <Stack.Screen name="surahs" options={{ title: t('surahs') }} />
-      <Stack.Screen name="bookmarks" options={{ title: t('bookmarks') }} />
-      <Stack.Screen name="settings" options={{ title: t('settings') }} />
-    </Stack>
+    <>
+      {/* Without this the clock and icons stay light whatever the theme, which
+          on the sand background is near-invisible. */}
+      <StatusBar style={theme.dark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.text,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: theme.background },
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: t('appTitle') }} />
+        <Stack.Screen name="reader" options={{ title: '' }} />
+        <Stack.Screen name="quran" options={{ title: t('quran') }} />
+        <Stack.Screen name="surahs" options={{ title: t('surahs') }} />
+        <Stack.Screen name="bookmarks" options={{ title: t('bookmarks') }} />
+        <Stack.Screen name="settings" options={{ title: t('settings') }} />
+      </Stack>
+    </>
   );
 }

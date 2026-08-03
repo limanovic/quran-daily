@@ -1,6 +1,9 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["expo.modules.exactalarms.ExactAlarmsModule"]
+    "modules": [
+      "expo.modules.exactalarms.ExactAlarmsModule",
+      "expo.modules.exactalarms.OemSettingsModule"
+    ]
   }
 }

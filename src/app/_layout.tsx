@@ -3,7 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { applyUiLanguage, useT } from '@/lib/i18n';
@@ -38,19 +38,62 @@ export default function RootLayout() {
   }, [ready]);
 
   // Tapping a notification opens the Reader with the exact scheduled passage.
+  // The tap is only *recorded* here: navigating before the Stack below has
+  // mounted throws, and from inside the response listener that throw is a fatal
+  // JS error — the "app closed" a tap produced whenever the notification
+  // arrived before fonts and preferences had finished loading.
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const handledResponse = useRef<string | null>(null);
+
   useEffect(() => {
+    // The cold-start response is also replayed to the listener, so both paths
+    // can report the same tap — take it once.
+    const record = (response: Notifications.NotificationResponse) => {
+      const id = response.notification.request.identifier;
+      if (handledResponse.current === id) return;
+      handledResponse.current = id;
+      const key = passageKeyParam(response);
+      if (key) setPendingKey(key);
+    };
     // Cold start: the app may have been launched by a notification tap.
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response) return;
-      const key = passageKeyParam(response);
-      if (key) router.push({ pathname: '/reader', params: { key } });
-    });
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const key = passageKeyParam(response);
-      if (key) router.push({ pathname: '/reader', params: { key } });
-    });
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) record(response);
+      })
+      .catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(record);
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (!ready || !pendingKey) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // `ready` means this component is rendering the Stack, not that the
+    // navigator underneath it has finished mounting — the container becomes
+    // navigable an effect later. Retry rather than assume.
+    const go = () => {
+      if (cancelled) return;
+      try {
+        router.push({ pathname: '/reader', params: { key: pendingKey } });
+        setPendingKey(null);
+      } catch {
+        timer = setTimeout(go, 50);
+      }
+    };
+    go();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [ready, pendingKey]);
+
+  // The OS module remembers the last response until it is cleared, so without
+  // this every later cold start would reopen the Reader on a stale passage.
+  useEffect(() => {
+    if (pendingKey !== null || handledResponse.current === null) return;
+    Notifications.clearLastNotificationResponseAsync?.().catch(() => {});
+  }, [pendingKey]);
 
   // Apply the saved theme and language preferences before the first frame is
   // shown — navigator headers keep the title they mount with, so the language

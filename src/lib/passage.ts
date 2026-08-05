@@ -3,6 +3,7 @@ import {
   TOTAL_AYAHS,
   TOTAL_PAGES,
   getAyahsByIdRange,
+  getAyahsByIds,
   getAyahsByPageRange,
   getSurahs,
 } from './db';
@@ -64,6 +65,15 @@ export async function buildPassageAt(unit: Unit, count: number, start: number): 
   }
   const rows = await getAyahsByPageRange(from, from + take - 1);
   return { rows, passageKey: { unit: 'page', startPage: from, count: take } };
+}
+
+/**
+ * The mus'haf page an ayah falls on. The sequential cursor is always an ayah
+ * id, so a page-sized delivery has to resolve its starting page from it.
+ */
+export async function pageOfAyah(id: number): Promise<number> {
+  const rows = await getAyahsByIds([id]);
+  return rows[0]?.page ?? 1;
 }
 
 /** Re-query the exact passage a PassageKey refers to. Shared by Reader + scheduler. */

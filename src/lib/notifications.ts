@@ -2,19 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as Notifications from 'expo-notifications';
 import { Linking, Platform } from 'react-native';
-import { AyahRow, getTranslationsByIdRange } from './db';
+import { AyahRow, TOTAL_AYAHS, getTranslationsByIdRange } from './db';
 import { applyUiLanguage, t } from './i18n';
-import { PassageKey, Unit, buildPassage, buildPassageAt, formatReference } from './passage';
-import { Delivery, Settings } from './settings';
 import {
-  advance,
-  loadCursors,
-  positionOf,
-  pruneCursors,
-  saveCursors,
-  unitTotal,
-  withPosition,
-} from './wird';
+  PassageKey,
+  buildPassage,
+  buildPassageAt,
+  formatReference,
+  pageOfAyah,
+} from './passage';
+import { Delivery, Settings } from './settings';
+import { advance, loadCursor, saveCursor } from './wird';
 
 /*
  * Scheduling model — rolling window with pre-committed random picks.
@@ -43,9 +41,11 @@ export type LedgerEntry = {
   dateISO: string; // 'YYYY-MM-DD' local calendar day
   time: string; // 'HH:mm'
   passageKey: PassageKey;
-  // Set for passages taken in order, so that once the occurrence has elapsed
-  // its wird cursor can be moved past it. A random pick must never move one.
-  sequential?: boolean;
+  // Where the shared wird cursor lands once this occurrence has fired. Set only
+  // for passages taken in order — a random pick must never move the cursor.
+  // Stored rather than recomputed because a page-sized passage's end is a
+  // database lookup, and settling has to work from the ledger alone.
+  nextCursor?: number;
 };
 
 const LEDGER_KEY = 'ledger.v1';
@@ -186,21 +186,12 @@ function byOccurrence(a: LedgerEntry, b: LedgerEntry): number {
   return occurrenceDate(a.dateISO, a.time).getTime() - occurrenceDate(b.dateISO, b.time).getTime();
 }
 
-function passageStart(key: PassageKey): number {
-  return key.unit === 'ayah' ? key.startId : key.startPage;
-}
-
-/** Where a sequential wird resumes after this passage, wrapping past An-Nas. */
-function passageEnd(key: PassageKey): number {
-  return advance(passageStart(key), key.count, unitTotal(key.unit));
-}
-
 /**
- * Move every sequential cursor past the occurrences that have already fired,
- * and drop those entries from the ledger. This is the only place a cursor
+ * Move the shared wird cursor past the occurrences that have already fired, and
+ * drop those entries from the ledger. This is the only place the cursor
  * advances: a wird moves on because its portion was delivered, not merely
  * because a notification was queued. Entries are applied in chronological
- * order, so the last one to fire is where the wird now stands.
+ * order, so the last in-order one to fire is where the wird now stands.
  */
 async function settleElapsed(now: Date): Promise<LedgerEntry[]> {
   const stored = await loadLedger();
@@ -208,12 +199,8 @@ async function settleElapsed(now: Date): Promise<LedgerEntry[]> {
   if (pending.length === stored.length) return pending;
 
   const elapsed = stored.filter((e) => occurrenceDate(e.dateISO, e.time) <= now).sort(byOccurrence);
-  let cursors = await loadCursors();
-  for (const e of elapsed) {
-    if (!e.sequential) continue;
-    cursors = withPosition(cursors, e.time, e.passageKey.unit, passageEnd(e.passageKey));
-  }
-  await saveCursors(cursors);
+  const settled = elapsed.filter((e) => e.nextCursor !== undefined).pop();
+  if (settled?.nextCursor !== undefined) await saveCursor(settled.nextCursor);
   await saveLedger(pending);
   return pending;
 }
@@ -234,17 +221,31 @@ async function buildBody(rows: AyahRow[], settings: Settings): Promise<string> {
   return text.length > 2000 ? `${text.slice(0, 2000)}…` : text;
 }
 
-/** `start` present means this delivery is sequential and resumes from there. */
+/**
+ * `cursor` present means this delivery is in order and resumes from that ayah.
+ * A page-sized delivery starts at the page that ayah falls on, and leaves the
+ * cursor just past that page range's last ayah — so ayah- and page-sized
+ * readings stay on one progression.
+ */
 async function scheduleOccurrence(
   dateISO: string,
   delivery: Delivery,
   settings: Settings,
-  start?: number,
+  cursor?: number,
 ): Promise<LedgerEntry> {
-  const { rows, passageKey } =
-    start === undefined
-      ? await buildPassage(delivery.unit, delivery.count)
-      : await buildPassageAt(delivery.unit, delivery.count, start);
+  let passage: Awaited<ReturnType<typeof buildPassage>>;
+  let nextCursor: number | undefined;
+  if (cursor === undefined) {
+    passage = await buildPassage(delivery.unit, delivery.count);
+  } else if (delivery.unit === 'ayah') {
+    passage = await buildPassageAt('ayah', delivery.count, cursor);
+    nextCursor = advance(cursor, passage.passageKey.count, TOTAL_AYAHS);
+  } else {
+    passage = await buildPassageAt('page', delivery.count, await pageOfAyah(cursor));
+    const lastId = passage.rows[passage.rows.length - 1]?.id ?? cursor;
+    nextCursor = advance(lastId, 1, TOTAL_AYAHS);
+  }
+  const { rows, passageKey } = passage;
   const title = await formatReference(rows, passageKey);
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
@@ -264,7 +265,7 @@ async function scheduleOccurrence(
     dateISO,
     time: delivery.time,
     passageKey,
-    ...(start !== undefined && { sequential: true }),
+    ...(nextCursor !== undefined && { nextCursor }),
   };
 }
 
@@ -319,18 +320,16 @@ async function topUpScheduleInner(settings: Settings): Promise<LedgerEntry[]> {
   const ledger = await settleElapsed(now);
   const scheduled = new Set(ledger.map(occurrenceKey));
 
-  // A deleted delivery time leaves its progress behind with nothing to read it.
-  const cursors = pruneCursors(await loadCursors(), settings.deliveries.map((d) => d.time));
-  await saveCursors(cursors);
-
-  // Positions the still-pending notifications have already claimed. Walked in
-  // memory only — none of it is committed until those occurrences elapse, so
-  // cancelling the window and rebuilding it lands on the same passages.
-  const walk = new Map<string, number>();
-  const walkKey = (time: string, unit: Unit) => `${time}|${unit}`;
-  for (const e of [...ledger].sort(byOccurrence)) {
-    if (e.sequential) walk.set(walkKey(e.time, e.passageKey.unit), passageEnd(e.passageKey));
-  }
+  // Where the in-order progression stands, then where the still-pending
+  // notifications have already carried it. The walk is in memory only — none of
+  // it is committed until those occurrences elapse, so cancelling the window and
+  // rebuilding it lands on the same passages.
+  const cursor = await loadCursor();
+  const claimed = [...ledger]
+    .sort(byOccurrence)
+    .filter((e) => e.nextCursor !== undefined)
+    .pop();
+  let walk = claimed?.nextCursor ?? cursor;
 
   // Fill the window: N days × deliveries/day, never exceeding MAX_PENDING total.
   const horizonDays = Math.max(1, Math.floor(MAX_PENDING / settings.deliveries.length));
@@ -341,13 +340,15 @@ async function topUpScheduleInner(settings: Settings): Promise<LedgerEntry[]> {
       if (ledger.length >= MAX_PENDING) break outer;
       if (occurrenceDate(dateISO, delivery.time) <= now) continue; // today's already-past times
       if (scheduled.has(occurrenceKey({ dateISO, time: delivery.time }))) continue;
-      const key = walkKey(delivery.time, delivery.unit);
-      const start =
-        delivery.mode === 'sequential'
-          ? walk.get(key) ?? positionOf(cursors, delivery.time, delivery.unit)
-          : undefined;
-      const entry = await scheduleOccurrence(dateISO, delivery, settings, start);
-      if (start !== undefined) walk.set(key, passageEnd(entry.passageKey));
+      // Deliveries are visited in clock order within each day, so several
+      // in-order times split one continuous reading across the day.
+      const entry = await scheduleOccurrence(
+        dateISO,
+        delivery,
+        settings,
+        delivery.mode === 'sequential' ? walk : undefined,
+      );
+      if (entry.nextCursor !== undefined) walk = entry.nextCursor;
       ledger.push(entry);
       scheduled.add(occurrenceKey(entry));
     }

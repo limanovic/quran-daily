@@ -1,55 +1,44 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TOTAL_AYAHS, TOTAL_PAGES } from './db';
-import { Unit } from './passage';
+import { TOTAL_AYAHS } from './db';
 
 /*
- * How far each sequential wird has got: the position its *next* delivery
+ * How far the sequential wird has got: the ayah its *next* in-order delivery
  * starts from.
  *
- * Kept out of Settings on purpose. The scheduler advances a cursor as
- * occurrences elapse, while Settings is held in React state on two screens —
- * a screen that loaded before an advance would write the stale position back
- * on the next unrelated edit and re-deliver passages the user already had.
+ * There is one position, not one per delivery time. Every time set to "in
+ * order" draws from it, in clock order — 09:00 takes 1:1, 10:00 takes 1:2,
+ * 14:00 takes 1:3 — so several readings a day are one continuous passage
+ * through the mus'haf rather than several parallel ones all starting at
+ * Al-Fatiha. A time set to "random" never touches it, which is how a delivery
+ * opts out of the progression.
  *
- * A cursor moves only when an occurrence has actually passed. Pending
- * notifications bake their passage in at scheduling time, but the positions
- * they consume are walked over in memory (see notifications.ts) and never
- * stored, so cancelling and rebuilding the window is always a no-op here.
+ * The position is always an ayah id, even for deliveries measured in pages: a
+ * page delivery starts at the page containing this ayah and leaves the cursor
+ * just past that page's last ayah. One number keeps mixed-unit setups on a
+ * single progression.
  *
- * Keyed by delivery time — the same identity the rest of the app uses for a
- * delivery. Both units are tracked so switching Ayahs ↔ Pages and back
- * resumes each where it left off.
+ * Kept out of Settings on purpose. The scheduler advances it as occurrences
+ * elapse, while Settings is held in React state on two screens — a screen that
+ * loaded before an advance would write the stale position back on the next
+ * unrelated edit and re-deliver passages the user already had.
+ *
+ * It moves only when an occurrence has actually passed. Pending notifications
+ * bake their passage in at scheduling time, but the positions they consume are
+ * walked over in memory (see notifications.ts) and never stored, so cancelling
+ * and rebuilding the window always lands on the same passages.
  */
 
-export type WirdCursor = { ayah: number; page: number };
-export type WirdCursors = Record<string, WirdCursor>;
+const WIRD_KEY = 'wird.v2';
+/** Pre-shared-cursor shape: { [deliveryTime]: { ayah, page } }. */
+const LEGACY_KEY = 'wird.v1';
 
-const WIRD_KEY = 'wird.v1';
+/** Al-Fatiha 1:1 — where a wird that has never run begins. */
+export const CURSOR_START = 1;
 
-/** Al-Fatiha 1:1, page 1 — where a wird that has never run begins. */
-export const CURSOR_START: WirdCursor = { ayah: 1, page: 1 };
-
-export function unitTotal(unit: Unit): number {
-  return unit === 'ayah' ? TOTAL_AYAHS : TOTAL_PAGES;
-}
-
-/** The stored position for a delivery/unit, repaired to a usable one. */
-export function positionOf(cursors: WirdCursors, time: string, unit: Unit): number {
-  const raw = (cursors[time] ?? CURSOR_START)[unit === 'ayah' ? 'ayah' : 'page'];
-  const pos = Math.floor(raw);
-  return Number.isFinite(pos) && pos >= 1 && pos <= unitTotal(unit) ? pos : 1;
-}
-
-export function withPosition(
-  cursors: WirdCursors,
-  time: string,
-  unit: Unit,
-  position: number,
-): WirdCursors {
-  const current = cursors[time] ?? CURSOR_START;
-  const next: WirdCursor =
-    unit === 'ayah' ? { ...current, ayah: position } : { ...current, page: position };
-  return { ...cursors, [time]: next };
+/** Repair a stored position into a usable ayah id. */
+export function normalizeCursor(value: unknown): number {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) && n >= 1 && n <= TOTAL_AYAHS ? n : CURSOR_START;
 }
 
 /** Next start after taking `count` units from `start`, wrapping past the end. */
@@ -57,44 +46,37 @@ export function advance(start: number, count: number, total: number): number {
   return ((start - 1 + count) % total) + 1;
 }
 
-export async function loadCursors(): Promise<WirdCursors> {
+export async function loadCursor(): Promise<number> {
   const raw = await AsyncStorage.getItem(WIRD_KEY);
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? (parsed as WirdCursors) : {};
-  } catch {
-    return {};
-  }
-}
-
-export async function saveCursors(cursors: WirdCursors): Promise<void> {
-  await AsyncStorage.setItem(WIRD_KEY, JSON.stringify(cursors));
-}
-
-/** Drop cursors for times that are no longer delivery times. */
-export function pruneCursors(cursors: WirdCursors, times: string[]): WirdCursors {
-  const keep = new Set(times);
-  return Object.fromEntries(Object.entries(cursors).filter(([time]) => keep.has(time)));
+  if (raw !== null) return normalizeCursor(JSON.parse(raw));
+  return migrateLegacyCursor();
 }
 
 /**
- * Retiming a delivery keeps its progress: the time is only an identifier, and
- * moving a wird from 09:00 to 10:00 shouldn't restart the khatma. Must land
- * before the settings change that renames the delivery is scheduled.
+ * Per-delivery cursors predate the shared progression. Collapse them by taking
+ * the furthest one — resuming slightly ahead re-reads nothing, where resuming
+ * behind would repeat passages the user has already been sent.
  */
-export async function renameCursor(from: string, to: string): Promise<void> {
-  if (from === to) return;
-  const cursors = await loadCursors();
-  const moved = cursors[from];
-  if (!moved) return;
-  const next = { ...cursors, [to]: moved };
-  delete next[from];
-  await saveCursors(next);
+async function migrateLegacyCursor(): Promise<number> {
+  const raw = await AsyncStorage.getItem(LEGACY_KEY);
+  if (!raw) return CURSOR_START;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, { ayah?: number }>;
+    const positions = Object.values(parsed ?? {}).map((c) => normalizeCursor(c?.ayah));
+    const furthest = positions.length > 0 ? Math.max(...positions) : CURSOR_START;
+    await saveCursor(furthest);
+    await AsyncStorage.removeItem(LEGACY_KEY);
+    return furthest;
+  } catch {
+    return CURSOR_START;
+  }
 }
 
-/** Start this wird's khatma over from Al-Fatiha. */
-export async function resetCursor(time: string): Promise<void> {
-  const cursors = await loadCursors();
-  await saveCursors({ ...cursors, [time]: { ...CURSOR_START } });
+export async function saveCursor(position: number): Promise<void> {
+  await AsyncStorage.setItem(WIRD_KEY, JSON.stringify(normalizeCursor(position)));
+}
+
+/** Start the khatma over from Al-Fatiha. */
+export async function resetCursor(): Promise<void> {
+  await saveCursor(CURSOR_START);
 }

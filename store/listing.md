@@ -16,17 +16,17 @@ Receive a passage of the Qur’an every day, at the times you choose — as a si
 
 Pick one or more daily times. Each one is its own wird: choose whether it arrives as a few ayahs or as full mushaf pages, and how many.
 
-Each wird can be set to either:
+Each time can be set to either:
 
-• **In order** — it works through the mushaf from Al-Fatiha onward, carrying on from wherever it last left off. Finish An-Nas and it begins again at the start.
+• **In order** — it takes the next passage of the mushaf, starting at Al-Fatiha and going on from wherever the reading last stopped. Finish An-Nas and it begins again at the start.
 • **Random** — a different passage every time, chosen at random.
 
-Set several times if you like, each with its own reading and its own place in the mushaf: an ordered wird in the morning, a random ayah in the evening.
+Times set to In order share one reading. Set three of them and the morning brings 1:1, midday 1:2, evening 1:3 — one continuous passage through the mushaf, split across the day rather than three separate readings all starting over. Any time you set to Random sits outside that progression and never moves it, so an ordered wird in the morning and a random ayah in the evening work exactly as you would expect.
 
 **Features**
 
 • Daily passages by local notification, at your chosen times
-• Sequential or random, set per delivery time
+• In order or random, set per delivery time — the in-order times share one continuous reading
 • Ayahs or mushaf pages, in the amount you choose
 • Uthmani Arabic text in the script of the Madani mushaf
 • 12 translations: English (Sahih International), Bosnian (Muhamed Mehanović), Albanian (Hasan Efendi Nahi), German (Bubenheim & Elyas), Turkish (Diyanet İşleri), French (Muhammad Hamidullah), Spanish (Julio Cortés), Italian (Hamza Roberto Piccardo), Dutch (Fred Leemhuis), Russian (Эльмир Кулиев), Indonesian (Kementerian Agama RI), Urdu (Fateh Muhammad Jalandhry)

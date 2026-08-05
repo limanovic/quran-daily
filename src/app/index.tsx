@@ -32,7 +32,7 @@ import {
   requestPermission,
 } from '@/lib/notifications';
 import { addExactAlarmPermissionListener } from '../../modules/exact-alarms';
-import { buildPassage, buildPassageAt } from '@/lib/passage';
+import { buildPassage, buildPassageAt, pageOfAyah } from '@/lib/passage';
 import {
   COUNT_BOUNDS,
   DEFAULT_SETTINGS,
@@ -41,13 +41,7 @@ import {
   loadSettings,
   saveSettings,
 } from '@/lib/settings';
-import {
-  WirdCursors,
-  loadCursors,
-  positionOf,
-  renameCursor,
-  resetCursor,
-} from '@/lib/wird';
+import { CURSOR_START, loadCursor, resetCursor } from '@/lib/wird';
 import { useTheme } from '@/lib/theme';
 import { makeListStyles } from '@/lib/ui-styles';
 
@@ -121,9 +115,8 @@ export default function HomeScreen() {
   const [editing, setEditing] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState<LastPosition>(null);
   const [bookmarkCount, setBookmarkCount] = useState(0);
-  // How far each sequential wird has reached, and the human reference for the
-  // one currently open in the edit sheet.
-  const [cursors, setCursors] = useState<WirdCursors>({});
+  // Where the shared in-order progression stands, and its human reference.
+  const [cursor, setCursor] = useState<number>(CURSOR_START);
   const [nextUpLabel, setNextUpLabel] = useState<string | null>(null);
   // Exact-alarm state: true everywhere except Android 12+ without the grant.
   const [exactAlarms, setExactAlarms] = useState(true);
@@ -158,11 +151,11 @@ export default function HomeScreen() {
           loadSettings(),
           loadLastPosition(),
           loadBookmarks(),
-          loadCursors(),
+          loadCursor(),
         ]);
         setSettings(loaded);
         setBookmarkCount(bookmarks.length);
-        setCursors(wird);
+        setCursor(wird);
         // Covers coming back from the system toggle if the broadcast is missed.
         if (Platform.OS === 'android') setExactAlarms(canScheduleExactAlarms());
         if (!lastId) {
@@ -185,47 +178,38 @@ export default function HomeScreen() {
     }, []),
   );
 
-  // A cursor moves when a reminder fires, which the scheduler notices on its
+  // The cursor moves when a reminder fires, which the scheduler notices on its
   // next run — not on any user action this screen can see.
   useEffect(
-    () => onLedgerChange(() => { loadCursors().then(setCursors).catch(() => {}); }),
+    () => onLedgerChange(() => { loadCursor().then(setCursor).catch(() => {}); }),
     [],
   );
 
   const edited = settings?.deliveries.find((d) => d.time === editing) ?? null;
-  const editedTime = edited?.time;
-  const editedUnit = edited?.unit;
-  const editedMode = edited?.mode;
+  const hasSequential = settings?.deliveries.some((d) => d.mode === 'sequential') ?? false;
 
-  // Where the open wird resumes, spelled out as a reference rather than an
+  // Where the progression resumes, spelled out as a reference rather than an
   // ayah id — "Al-Baqara 2:255" means something, "ayah 262" doesn't.
   useEffect(() => {
-    if (!editedTime || !editedUnit || editedMode !== 'sequential') {
+    if (!hasSequential) {
       setNextUpLabel(null);
-      return;
-    }
-    const position = positionOf(cursors, editedTime, editedUnit);
-    if (editedUnit === 'page') {
-      setNextUpLabel(t('pageN', { n: position }));
       return;
     }
     let cancelled = false;
     (async () => {
-      const [rows, surahs] = await Promise.all([getAyahsByIds([position]), getSurahs()]);
+      const [rows, surahs] = await Promise.all([getAyahsByIds([cursor]), getSurahs()]);
       if (cancelled) return;
       const row = rows[0];
       const name = row ? surahs.get(row.surah)?.name_en : null;
       setNextUpLabel(
-        row && name
-          ? `${name} ${row.surah}:${row.ayah}`
-          : t('ayahN', { n: position }),
+        row && name ? `${name} ${row.surah}:${row.ayah}` : t('ayahN', { n: cursor }),
       );
     })().catch(() => {});
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editedTime, editedUnit, editedMode, cursors]);
+  }, [hasSequential, cursor]);
 
   /** Persist a settings change and rebuild the notification window with it. */
   const apply = useCallback((next: Settings) => {
@@ -252,12 +236,18 @@ export default function HomeScreen() {
     // first in the list.
     const d = nextDelivery(settings.deliveries);
     if (!d) return;
-    // A sequential wird has one right answer for "next" — the cursor is the
-    // position its next reminder was already queued with.
-    const { passageKey } =
-      d.mode === 'sequential'
-        ? await buildPassageAt(d.unit, d.count, positionOf(await loadCursors(), d.time, d.unit))
-        : await buildPassage(d.unit, d.count);
+    // An in-order wird has one right answer for "next" — the shared cursor is
+    // the position its next reminder was already queued with.
+    let passageKey;
+    if (d.mode !== 'sequential') {
+      ({ passageKey } = await buildPassage(d.unit, d.count));
+    } else {
+      const at = await loadCursor();
+      ({ passageKey } =
+        d.unit === 'ayah'
+          ? await buildPassageAt('ayah', d.count, at)
+          : await buildPassageAt('page', d.count, await pageOfAyah(at)));
+    }
     router.push({ pathname: '/reader', params: { key: JSON.stringify(passageKey) } });
   }, [settings]);
 
@@ -288,13 +278,8 @@ export default function HomeScreen() {
             ]
           : settings.deliveries.map((d) => (d.time === editing ? { ...d, time } : d));
       deliveries.sort((a, b) => a.time.localeCompare(b.time));
-      // Progress is keyed by time, so a retimed wird has to carry its cursor
-      // across before the rebuild reads it — moving 09:00 to 10:00 must not
-      // restart the khatma.
-      if (mode === 'edit' && editing) {
-        await renameCursor(editing, time).catch(() => {});
-        setCursors(await loadCursors());
-      }
+      // The progression is shared, so retiming a delivery carries no progress
+      // with it — there is nothing to rename.
       apply({ ...settings, deliveries });
       setEditing(time);
     },
@@ -349,11 +334,11 @@ export default function HomeScreen() {
 
   const editedBounds = edited ? COUNT_BOUNDS[edited.unit] : null;
 
-  /** Begin this wird's khatma again; pending reminders hold stale positions. */
-  const startOver = (time: string) => {
+  /** Begin the khatma again; pending reminders hold stale positions. */
+  const startOver = () => {
     (async () => {
-      await resetCursor(time);
-      setCursors(await loadCursors());
+      await resetCursor();
+      setCursor(await loadCursor());
       await rebuildSchedule(await loadSettings());
     })().catch(() => {});
   };
@@ -411,6 +396,24 @@ export default function HomeScreen() {
           />
         )}
       </View>
+
+      {/* One progression, shown once. Per-time it would be a lie: which passage
+          a given time gets depends on where it sits among the others that day. */}
+      {hasSequential && (
+        <>
+          <Text style={styles.sectionTitle}>{t('sequential')}</Text>
+          <Text style={styles.sectionHint}>{t('sharedProgressionHint')}</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>{t('nextUp')}</Text>
+              <Text style={styles.rowValue}>{nextUpLabel ?? '…'}</Text>
+            </View>
+            <Pressable style={styles.row} accessibilityRole="button" onPress={startOver}>
+              <Text style={styles.linkText}>{t('startOver')}</Text>
+            </Pressable>
+          </View>
+        </>
+      )}
 
       {settings.deliveries.length > 0 && (
         <Pressable style={styles.linkRow} accessibilityRole="button" onPress={onPreview}>
@@ -631,21 +634,6 @@ export default function HomeScreen() {
                 <Text style={styles.hint}>
                   {edited.mode === 'sequential' ? t('sequentialHint') : t('randomHint')}
                 </Text>
-                {edited.mode === 'sequential' && (
-                  <>
-                    <View style={styles.row}>
-                      <Text style={styles.rowLabel}>{t('nextUp')}</Text>
-                      <Text style={styles.rowValue}>{nextUpLabel ?? '…'}</Text>
-                    </View>
-                    <Pressable
-                      style={styles.row}
-                      accessibilityRole="button"
-                      onPress={() => startOver(edited.time)}
-                    >
-                      <Text style={styles.linkText}>{t('startOver')}</Text>
-                    </Pressable>
-                  </>
-                )}
                 {/* Removing the last one is allowed: an empty list is how
                     notifications get turned off from inside the app. */}
                 <Pressable

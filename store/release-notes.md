@@ -26,6 +26,11 @@ Ask testers to check the parts that only show themselves over days:
   optimisation bite — the app offers both system screens from Settings.
 - A wird set to **In order** advances by one portion per reminder, and does not
   jump or repeat after the app has been closed for a few days.
+- With several times set to **In order**, they split one reading across the day
+  — 09:00 gets 1:1, 13:00 gets 1:2, 18:00 gets 1:3 — rather than each starting
+  over at Al-Fatiha.
+- A time set to **Random** never moves that progression: the in-order times
+  carry on as if it weren't there.
 - Tapping a reminder opens exactly the passage it showed.
-- Changing the amount or the time on an existing wird does not restart its
-  place in the mushaf.
+- Changing the amount or the time on an existing wird does not restart the
+  reading's place in the mushaf.
